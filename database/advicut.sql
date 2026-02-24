@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 24, 2026 at 02:36 PM
+-- Generation Time: Feb 24, 2026 at 04:48 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -34,8 +34,16 @@ CREATE TABLE `advisor_info` (
   `Uni_Email` varchar(200) NOT NULL,
   `Phone` varchar(12) NOT NULL,
   `Department_Name` varchar(100) NOT NULL,
-  `OneTime_Password` varchar(20) NOT NULL
+  `OneTime_Password` varchar(20) NOT NULL,
+  `NewPassword` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `advisor_info`
+--
+
+INSERT INTO `advisor_info` (`Advisor_ID`, `First_name`, `Last_Name`, `Uni_Email`, `Phone`, `Department_Name`, `OneTime_Password`, `NewPassword`) VALUES
+(30000, 'Andreas', 'Andreou', 'a.andreou@cut.ac.cy', '11111111', 'ΗΜΜΗΥ', '12345', NULL);
 
 -- --------------------------------------------------------
 
@@ -80,8 +88,16 @@ CREATE TABLE `student_info` (
   `Uni_Email` varchar(200) NOT NULL,
   `Year` int(1) NOT NULL,
   `Advisor_ID` int(5) NOT NULL,
-  `OneTime_Password` varchar(20) NOT NULL
+  `OneTime_Password` varchar(20) NOT NULL,
+  `NewPassword` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student_info`
+--
+
+INSERT INTO `student_info` (`Student_ID`, `First_name`, `Last_Name`, `Uni_Email`, `Year`, `Advisor_ID`, `OneTime_Password`, `NewPassword`) VALUES
+(27407, 'Paraskevas', 'Vafeiadis', 'pt.vafeiadis@edu.cut.ac.cy', 3, 30000, '1234', NULL);
 
 --
 -- Indexes for dumped tables
@@ -138,7 +154,7 @@ ALTER TABLE `communication_history`
 -- AUTO_INCREMENT for table `student_info`
 --
 ALTER TABLE `student_info`
-  MODIFY `Student_ID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `Student_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27408;
 
 --
 -- Constraints for dumped tables
