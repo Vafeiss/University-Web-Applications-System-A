@@ -27,7 +27,8 @@ $error = " "
     <body class="Log-in body">
         <div class="container d-flex justify-content-center align-items-center vh-100">
         <div class="card shadow p-4" style="width:400px;">
-        <h3 class="text-center mb-4">AdviCut</h3>
+        <h3 class="text-center mb-4">Welcome to AdviCut!</h3>
+        <img src="imgs/cut_tepak_image.png" class="card-img-top mb-4" alt="AdviCut Logo">
         <form method = "POST" action = "login.php">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
