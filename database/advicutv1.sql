@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 24, 2026 at 04:48 PM
+-- Generation Time: Feb 25, 2026 at 03:41 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,19 +31,16 @@ CREATE TABLE `advisor_info` (
   `Advisor_ID` int(5) NOT NULL,
   `First_name` varchar(50) NOT NULL,
   `Last_Name` varchar(50) NOT NULL,
-  `Uni_Email` varchar(200) NOT NULL,
   `Phone` varchar(12) NOT NULL,
-  `Department_Name` varchar(100) NOT NULL,
-  `OneTime_Password` varchar(20) NOT NULL,
-  `NewPassword` varchar(50) DEFAULT NULL
+  `Department_Name` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `advisor_info`
 --
 
-INSERT INTO `advisor_info` (`Advisor_ID`, `First_name`, `Last_Name`, `Uni_Email`, `Phone`, `Department_Name`, `OneTime_Password`, `NewPassword`) VALUES
-(30000, 'Andreas', 'Andreou', 'a.andreou@cut.ac.cy', '11111111', 'ΗΜΜΗΥ', '12345', NULL);
+INSERT INTO `advisor_info` (`Advisor_ID`, `First_name`, `Last_Name`, `Phone`, `Department_Name`) VALUES
+(30000, 'Andreas', 'Andreou', '11111111', 'ΗΜΜΗΥ');
 
 -- --------------------------------------------------------
 
@@ -85,19 +82,37 @@ CREATE TABLE `student_info` (
   `Student_ID` int(11) NOT NULL,
   `First_name` varchar(50) NOT NULL,
   `Last_Name` varchar(50) NOT NULL,
-  `Uni_Email` varchar(200) NOT NULL,
   `Year` int(1) NOT NULL,
-  `Advisor_ID` int(5) NOT NULL,
-  `OneTime_Password` varchar(20) NOT NULL,
-  `NewPassword` varchar(50) DEFAULT NULL
+  `Advisor_ID` int(5) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `student_info`
 --
 
-INSERT INTO `student_info` (`Student_ID`, `First_name`, `Last_Name`, `Uni_Email`, `Year`, `Advisor_ID`, `OneTime_Password`, `NewPassword`) VALUES
-(27407, 'Paraskevas', 'Vafeiadis', 'pt.vafeiadis@edu.cut.ac.cy', 3, 30000, '1234', NULL);
+INSERT INTO `student_info` (`Student_ID`, `First_name`, `Last_Name`, `Year`, `Advisor_ID`) VALUES
+(27407, 'Paraskevas', 'Vafeiadis', 3, 30000);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `User_ID` int(11) NOT NULL,
+  `Uni_Email` varchar(150) NOT NULL,
+  `Password` varchar(50) DEFAULT NULL,
+  `Role` enum('Student','Advisor','Admin','SuperUser') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`User_ID`, `Uni_Email`, `Password`, `Role`) VALUES
+(27407, 'pt.vafeiadis@edu.cut.ac.cy', '1234', 'Student'),
+(30000, 'a.andreou@cut.ac.cy', '1234', 'Advisor');
 
 --
 -- Indexes for dumped tables
@@ -107,8 +122,7 @@ INSERT INTO `student_info` (`Student_ID`, `First_name`, `Last_Name`, `Uni_Email`
 -- Indexes for table `advisor_info`
 --
 ALTER TABLE `advisor_info`
-  ADD PRIMARY KEY (`Advisor_ID`),
-  ADD UNIQUE KEY `Uni_Email` (`Uni_Email`);
+  ADD PRIMARY KEY (`Advisor_ID`);
 
 --
 -- Indexes for table `appointment_history`
@@ -131,8 +145,14 @@ ALTER TABLE `communication_history`
 --
 ALTER TABLE `student_info`
   ADD PRIMARY KEY (`Student_ID`),
-  ADD UNIQUE KEY `Uni_Email` (`Uni_Email`),
   ADD KEY `Advisor_ID` (`Advisor_ID`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`User_ID`),
+  ADD UNIQUE KEY `Uni_Email` (`Uni_Email`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -157,8 +177,20 @@ ALTER TABLE `student_info`
   MODIFY `Student_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27408;
 
 --
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `User_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30001;
+
+--
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `advisor_info`
+--
+ALTER TABLE `advisor_info`
+  ADD CONSTRAINT `advisor_info_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `appointment_history`
@@ -179,7 +211,8 @@ ALTER TABLE `communication_history`
 -- Constraints for table `student_info`
 --
 ALTER TABLE `student_info`
-  ADD CONSTRAINT `student_info_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`);
+  ADD CONSTRAINT `student_info_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`),
+  ADD CONSTRAINT `student_info_ibfk_2` FOREIGN KEY (`Student_ID`) REFERENCES `users` (`User_ID`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

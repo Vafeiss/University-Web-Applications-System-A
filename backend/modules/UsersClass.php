@@ -10,6 +10,10 @@ Error Messages : Database connection failed.
 Files in use: authentication.php where the object user is created and the log_in method is called,
 student_dashboard.php to test the login of student and advisor_dashboard.php to test the login of the advisor
 advicut.sql for the test with the database.
+
+25-feb-2026 v0.2
+Added new database schema with Users table send the query to the user table and then based on the role
+send the user to the right dashboard.
 */
 
 session_start();
@@ -29,7 +33,7 @@ mysqli_select_db($this->conn,"advicut");
 //method to log in the user by checking email and password to the advicut database
 public function Log_in(string $email, string $password) {
     //query to get all the students where email and password match the input parameters 
-    $sql = "SELECT * FROM student_info WHERE Uni_Email = ? AND OneTime_Password = ?";
+    $sql = "SELECT * FROM Users WHERE Uni_Email = ? AND Password = ?";
     $stmt1 = $this->conn->prepare($sql);
     $stmt1->bind_param("ss", $email, $password); //make the query as a prepared statement to prevent attacks
     $stmt1->execute();
@@ -38,36 +42,34 @@ public function Log_in(string $email, string $password) {
     if($result1->num_rows == 1) {
         $row = $result1->fetch_assoc();
         $_SESSION['email'] = $row['Uni_Email']; //storing info while user logged in
-        $_SESSION['UserID'] = $row['StudentID'];
-        $_SESSION['role'] = 'student';
-        //sent to student dashboard if result == true
-        header("Location: ../../frontend/student_dashboard.php");
-        exit();
-    }
-    //query to get all the advisors where email and password match the input parameters 
-    $sql = "SELECT * FROM advisor_info WHERE Uni_Email = ? AND OneTime_Password = ?";
-    $stmt2 = $this->conn->prepare($sql);
-    $stmt2->bind_param("ss", $email, $password); //make the query as a prepared statement to prevent attacks
-    $stmt2->execute(); 
-    $result2 = $stmt2->get_result();
+        $_SESSION['UserID'] = $row['UserID'];
+        $_SESSION['role'] = $row['Role'];
 
-    if($result2->num_rows == 1) {
-        $row = $result2->fetch_assoc();
-        $_SESSION['email'] = $row['Uni_Email']; //storing info while user logged in
-        $_SESSION['UserID'] = $row['AdvisorID'];
-        $_SESSION['role'] = 'advisor';
-        //sent to advisor dashboard if result == true
-        header("Location: ../../frontend/advisor_dashboard.php");
-        exit();
+        if ($_SESSION['role'] == 'Student') {
+            header("Location: ../../frontend/student_dashboard.php");
+            exit();
+        }
+        else if ($_SESSION['role'] == 'Advisor') {
+            header("Location: ../../frontend/advisor_dashboard.php");
+            exit();
+        }
+        else if ($_SESSION['role'] == 'Admin') {
+            header("Location: ../../frontend/admin_dashboard.php");
+            exit();
+        }
+        else if ($_SESSION['role'] == 'SuperUser') {
+            header("Location: ../../frontend/SuperUser_dashboard.php");
+            exit();
+        }
     }
-    //if non of the above is true just sent them back to the login page
-    header("Location: ../../frontend/index.php");
-    exit();
+    else {
+        echo "Invalid email or password.";
+        header("location: ../../frontend/index.php");
+    }
 }
-
 //method to kill the session of the user and log them out.
 public function Log_out() {
-
+    session_destroy();
 }
 
 

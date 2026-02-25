@@ -11,7 +11,7 @@ Error Messages : Field not filled. (1)
 Files in use: Bootstrap CSS from the web
 
 24-feb-2026: changed the where the form is sent to the backend to validate if the inputs are correct.
-Paraskevas Vafeiadis 
+Paraskevas Vafeiadis
 */
 
 ?>
