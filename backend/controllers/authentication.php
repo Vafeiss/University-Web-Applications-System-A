@@ -18,9 +18,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-$email    = trim($_POST['email'] ?? '');
+$email = trim($_POST['email'] ?? '');
 $password = $_POST['password'] ?? '';
 
 $user = new Users();
 $user->log_in($email, $password);
 
+?>

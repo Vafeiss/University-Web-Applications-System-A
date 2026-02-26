@@ -15,13 +15,12 @@ Paraskevas Vafeiadis
 */
 
 ?>
-<?php
-// (1)
+<p?php
 $error = " "
 ?>
 <!DOCTYPE html>
 <html>
-    <head> 
+    <head>
         <meta charset="UTF-8">
         <title>AdviCut Login Page</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

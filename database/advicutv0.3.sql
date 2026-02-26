@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 25, 2026 at 03:41 PM
+-- Generation Time: Feb 26, 2026 at 09:30 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -102,7 +102,7 @@ INSERT INTO `student_info` (`Student_ID`, `First_name`, `Last_Name`, `Year`, `Ad
 CREATE TABLE `users` (
   `User_ID` int(11) NOT NULL,
   `Uni_Email` varchar(150) NOT NULL,
-  `Password` varchar(50) DEFAULT NULL,
+  `Password` varchar(200) DEFAULT NULL,
   `Role` enum('Student','Advisor','Admin','SuperUser') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -111,8 +111,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`User_ID`, `Uni_Email`, `Password`, `Role`) VALUES
-(27407, 'pt.vafeiadis@edu.cut.ac.cy', '1234', 'Student'),
-(30000, 'a.andreou@cut.ac.cy', '1234', 'Advisor');
+(1, 'admin@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Admin'),
+(2, 'superuser@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'SuperUser'),
+(27407, 'pt.vafeiadis@edu.cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Student'),
+(30000, 'a.andreou@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Advisor');
 
 --
 -- Indexes for dumped tables

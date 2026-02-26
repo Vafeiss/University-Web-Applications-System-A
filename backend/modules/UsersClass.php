@@ -14,6 +14,12 @@ advicut.sql for the test with the database.
 25-feb-2026 v0.2
 Added new database schema with Users table send the query to the user table and then based on the role
 send the user to the right dashboard.
+Paraskevas Vafeiadis
+
+26-feb-2026 v0.3
+Added the change password method to the class and created
+and a controller to handle the change password process with validation and error handling
+Paraskevas Vafeiadis
 */
 
 session_start();
@@ -26,60 +32,104 @@ public function __construct() {
 
 if ($this->conn->connect_error) { //if connection fails kill it and print message
     die("Connection failed: " . $this->conn->connect_error);
-}
-mysqli_select_db($this->conn,"advicut");
-}
+    $this ->conn->set_charset("utf8mb4");
+}}
+
 
 //method to log in the user by checking email and password to the advicut database
-public function Log_in(string $email, string $password) {
-    //query to get all the students where email and password match the input parameters 
-    $sql = "SELECT * FROM Users WHERE Uni_Email = ? AND Password = ?";
-    $stmt1 = $this->conn->prepare($sql);
-    $stmt1->bind_param("ss", $email, $password); //make the query as a prepared statement to prevent attacks
-    $stmt1->execute();
-    $result1 = $stmt1->get_result();
-    
-    if($result1->num_rows == 1) {
-        $row = $result1->fetch_assoc();
-        $_SESSION['email'] = $row['Uni_Email']; //storing info while user logged in
-        $_SESSION['UserID'] = $row['UserID'];
-        $_SESSION['role'] = $row['Role'];
+    public function Log_in(string $email, string $password) {
+        //query to get all the students where email and password match the input parameters
+        $sql = "SELECT User_ID , Uni_Email , Role , Password FROM Users WHERE Uni_Email = ? LIMIT 1";
+        $stmt1 = $this->conn->prepare($sql);
+        $stmt1->bind_param("s", $email); //make the query as a prepared statement to prevent attacks
+        $stmt1->execute();
+        $result1 = $stmt1->get_result();
 
-        if ($_SESSION['role'] == 'Student') {
-            header("Location: ../../frontend/student_dashboard.php");
+        if ($result1->num_rows !== 1) { //error handling if email not found go back to index
+            header("Location: ../../frontend/index.php?error=invalid");
             exit();
         }
-        else if ($_SESSION['role'] == 'Advisor') {
-            header("Location: ../../frontend/advisor_dashboard.php");
+
+        $row = $result1->fetch_assoc();//error handling if password wrong go bakc to index
+        if (!password_verify($password, $row["Password"])) {
+            header("Location: ../../frontend/index.php?error=invalid");
             exit();
         }
-        else if ($_SESSION['role'] == 'Admin') {
-            header("Location: ../../frontend/admin_dashboard.php");
-            exit();
+
+        if($result1->num_rows == 1) {
+            $_SESSION['email'] = $row['Uni_Email']; //storing info while user logged in
+            $_SESSION['UserID'] = $row['User_ID'];
+            $_SESSION['role'] = $row['Role'];}
+        else {
+        echo "Invalid credentials";
         }
-        else if ($_SESSION['role'] == 'SuperUser') {
-            header("Location: ../../frontend/SuperUser_dashboard.php");
-            exit();
+
+            if ($_SESSION['role'] == 'Student') {
+                header("Location: ../../frontend/student_dashboard.php");
+                exit();
+            }
+            else if ($_SESSION['role'] == 'Advisor') {
+                header("Location: ../../frontend/advisor_dashboard.php");
+                exit();
+            }
+            else if ($_SESSION['role'] == 'Admin') {
+                header("Location: ../../frontend/admin_dashboard.php");
+                exit();
+            }
+            else if ($_SESSION['role'] == 'SuperUser') {
+                header("Location: ../../frontend/SuperUser_dashboard.php");
+                exit();
+            }
+        else {
+            
+            header("location: ../../frontend/index.php");
         }
     }
-    else {
-        echo "Invalid email or password.";
-        header("location: ../../frontend/index.php");
-    }
-}
 //method to kill the session of the user and log them out.
 public function Log_out() {
     session_destroy();
 }
 
 
-public function ValidateCredentials($email, $password) {
+public function Validate_Credentials($email, $password) {
 
 
 }
 
-//method to reset the one time password of the user to his own.
-public function Signin($email, $password) {
+//method to reset the given password of the user to his own.
+public function Change_Password(int $userId, string $currentPassword, string $newPassword): bool
+{
+    if (strlen($newPassword) < 8) {
+        return false;
+    }
+    $stmt = $this->conn->prepare(
+        "SELECT Password FROM Users WHERE User_ID = ? LIMIT 1"
+    );
+
+    $stmt->bind_param("i", $userId); //get the current of password to verify
+    $stmt->execute();
+
+
+    $result2 = $stmt->get_result();
+    if ($result2->num_rows !== 1) {
+        return false;
+    }
+
+    $row = $result2->fetch_assoc();
+    //verify existing password
+    if (!password_verify($currentPassword, $row["Password"])) {
+        return false;
+    }
+
+    //hash password
+    $newPasswordhashed = password_hash($newPassword, PASSWORD_DEFAULT);
+
+    //update the database with the new password
+    $uploadtodb = $this->conn->prepare(
+        "UPDATE Users SET Password = ? WHERE User_ID = ?"
+    );
+    $uploadtodb->bind_param("si", $newPasswordhashed, $userId);
+    return $uploadtodb->execute();
 
 }
 }
