@@ -20,6 +20,10 @@ Paraskevas Vafeiadis
 Added the change password method to the class and created
 and a controller to handle the change password process with validation and error handling
 Paraskevas Vafeiadis
+
+27-feb-2026 v0.4
+Added the log out method to the class and created a controller to handle the log out process
+Paraskevas Vafeiadis
 */
 
 session_start();
@@ -87,7 +91,11 @@ if ($this->conn->connect_error) { //if connection fails kill it and print messag
     }
 //method to kill the session of the user and log them out.
 public function Log_out() {
+    $_SESSION = [];
     session_destroy();
+
+    header("location: ../../frontend/index.php");
+    exit();
 }
 
 
