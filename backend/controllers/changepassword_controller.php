@@ -15,6 +15,11 @@ Files in use: UsersClass.php where the change_password method is.
 */
 declare(strict_types=1);
 
+// session must be started to access $_SESSION
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../modules/UsersClass.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { //check if the page is accessed with a post request

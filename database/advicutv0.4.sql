@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 26, 2026 at 09:30 PM
+-- Generation Time: Feb 28, 2026 at 06:44 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `advisor_info` (
-  `Advisor_ID` int(5) NOT NULL,
+  `Advisor_ID` int(11) NOT NULL,
   `First_name` varchar(50) NOT NULL,
   `Last_Name` varchar(50) NOT NULL,
   `Phone` varchar(12) NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE `appointment_history` (
   `Student_ID` int(11) NOT NULL,
   `Advisor_ID` int(11) NOT NULL,
   `Reason` text NOT NULL,
-  `Appointment_Date` int(11) NOT NULL,
+  `Appointment_Date` datetime NOT NULL,
   `Status` tinyint(1) NOT NULL,
   `Attendance` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -82,8 +82,8 @@ CREATE TABLE `student_info` (
   `Student_ID` int(11) NOT NULL,
   `First_name` varchar(50) NOT NULL,
   `Last_Name` varchar(50) NOT NULL,
-  `Year` int(1) NOT NULL,
-  `Advisor_ID` int(5) NOT NULL
+  `Year` int(11) NOT NULL,
+  `Advisor_ID` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -111,10 +111,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`User_ID`, `Uni_Email`, `Password`, `Role`) VALUES
-(1, 'admin@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Admin'),
-(2, 'superuser@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'SuperUser'),
-(27407, 'pt.vafeiadis@edu.cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Student'),
-(30000, 'a.andreou@cut.ac.cy', '$2y$10$VT59blu6.gxmy/oy59WNDOO56CQhKw/fSHZkVzlekRzn.kDf3UvW2', 'Advisor');
+(1, 'admin@cut.ac.cy', '$2y$10$VT59...', 'Admin'),
+(2, 'superuser@cut.ac.cy', '$2y$10$VT59...', 'SuperUser'),
+(27407, 'pt.vafeiadis@edu.cut.ac.cy', '$2y$10$VT59...', 'Student'),
+(30000, 'a.andreou@cut.ac.cy', '$2y$10$VT59...', 'Advisor');
 
 --
 -- Indexes for dumped tables
@@ -131,23 +131,23 @@ ALTER TABLE `advisor_info`
 --
 ALTER TABLE `appointment_history`
   ADD PRIMARY KEY (`Appointment_ID`),
-  ADD KEY `Advisor_ID` (`Advisor_ID`),
-  ADD KEY `Student_ID` (`Student_ID`);
+  ADD KEY `fk_app_student` (`Student_ID`),
+  ADD KEY `fk_app_advisor` (`Advisor_ID`);
 
 --
 -- Indexes for table `communication_history`
 --
 ALTER TABLE `communication_history`
   ADD PRIMARY KEY (`Comm_ID`),
-  ADD KEY `Advisor_ID` (`Advisor_ID`),
-  ADD KEY `Student_ID` (`Student_ID`);
+  ADD KEY `fk_comm_student` (`Student_ID`),
+  ADD KEY `fk_comm_advisor` (`Advisor_ID`);
 
 --
 -- Indexes for table `student_info`
 --
 ALTER TABLE `student_info`
   ADD PRIMARY KEY (`Student_ID`),
-  ADD KEY `Advisor_ID` (`Advisor_ID`);
+  ADD KEY `fk_student_advisor` (`Advisor_ID`);
 
 --
 -- Indexes for table `users`
@@ -173,12 +173,6 @@ ALTER TABLE `communication_history`
   MODIFY `Comm_ID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `student_info`
---
-ALTER TABLE `student_info`
-  MODIFY `Student_ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27408;
-
---
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -192,29 +186,28 @@ ALTER TABLE `users`
 -- Constraints for table `advisor_info`
 --
 ALTER TABLE `advisor_info`
-  ADD CONSTRAINT `advisor_info_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_advisor_user` FOREIGN KEY (`Advisor_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `appointment_history`
 --
 ALTER TABLE `appointment_history`
-  ADD CONSTRAINT `appointment_history_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`),
-  ADD CONSTRAINT `appointment_history_ibfk_2` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`),
-  ADD CONSTRAINT `appointment_history_ibfk_3` FOREIGN KEY (`Student_ID`) REFERENCES `advisor_info` (`Advisor_ID`);
+  ADD CONSTRAINT `fk_app_advisor` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_app_student` FOREIGN KEY (`Student_ID`) REFERENCES `student_info` (`Student_ID`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `communication_history`
 --
 ALTER TABLE `communication_history`
-  ADD CONSTRAINT `communication_history_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`),
-  ADD CONSTRAINT `communication_history_ibfk_2` FOREIGN KEY (`Student_ID`) REFERENCES `advisor_info` (`Advisor_ID`);
+  ADD CONSTRAINT `fk_comm_advisor` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comm_student` FOREIGN KEY (`Student_ID`) REFERENCES `student_info` (`Student_ID`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `student_info`
 --
 ALTER TABLE `student_info`
-  ADD CONSTRAINT `student_info_ibfk_1` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`),
-  ADD CONSTRAINT `student_info_ibfk_2` FOREIGN KEY (`Student_ID`) REFERENCES `users` (`User_ID`);
+  ADD CONSTRAINT `fk_student_advisor` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`Advisor_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_student_user` FOREIGN KEY (`Student_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

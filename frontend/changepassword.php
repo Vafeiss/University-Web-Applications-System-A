@@ -1,8 +1,13 @@
 <?php
-session_start();
+require_once('init.php');
+require_once("../backend/modules/UsersClass.php");
+$user = new Users();
+$user->Check_Session();
+
 if (!isset($_SESSION["UserID"])) {
-    header("Location: index.php");
+    header("Location: index.php?error=not_logged_in");
     exit();
+
 } ?>
 
 <!DOCTYPE html>

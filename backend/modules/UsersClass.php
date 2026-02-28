@@ -24,6 +24,10 @@ Paraskevas Vafeiadis
 27-feb-2026 v0.4
 Added the log out method to the class and created a controller to handle the log out process
 Paraskevas Vafeiadis
+
+27-feb-2026 v1.0
+Pre-final version of the class it fully works needs enchans **testing** and review added NEW check_Session for security measures
+Paraskevas Vafeiadis
 */
 
 session_start();
@@ -40,7 +44,7 @@ if ($this->conn->connect_error) { //if connection fails kill it and print messag
 }}
 
 
-//method to log in the user by checking email and password to the advicut database
+    //method to log in the user by checking email and password to the advicut database
     public function Log_in(string $email, string $password) {
         //query to get all the students where email and password match the input parameters
         $sql = "SELECT User_ID , Uni_Email , Role , Password FROM Users WHERE Uni_Email = ? LIMIT 1";
@@ -60,7 +64,59 @@ if ($this->conn->connect_error) { //if connection fails kill it and print messag
             exit();
         }
 
-        if($result1->num_rows == 1) {
+        $this->Validate_Credentials($row);
+        
+    }
+
+//method to kill the session of the user and log them out.
+public function Log_out() {
+    $_SESSION = [];
+    session_destroy();
+
+    header("location: ../../frontend/index.php");
+    exit();
+}
+
+public function Check_Session(string $requiredRole = null) {
+    //check all expected session values exist
+    if (!isset($_SESSION['email']) || !isset($_SESSION['UserID']) || !isset($_SESSION['role'])) {
+        header("location: ../../frontend/index.php?error=unauthorized");
+        exit();
+    }
+
+    //userid is numbers and not a invalid number 
+    $userId = intval($_SESSION['UserID']);
+    if ($userId <= 0) {
+        header("location: ../../frontend/index.php?error=unauthorized");
+        exit();
+    }
+
+    //query to get the row froim the data base
+    $stmt = $this->conn->prepare("SELECT Uni_Email, Role FROM Users WHERE User_ID = ? LIMIT 1");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows !== 1) {
+        header("location: ../../frontend/index.php?error=unauthorized");
+        exit();
+    }
+    $result3 = $result->fetch_assoc();
+
+    //chekc if the email and role in the session match the database
+    if ($result3['Uni_Email'] !== $_SESSION['email'] || $result3['Role'] !== $_SESSION['role']) {
+        header("location: ../../frontend/index.php?error=unauthorized");
+        exit();
+    }
+
+    //if not the required role for the page then exit
+    if ($requiredRole !== null && $result3['Role'] !== $requiredRole) {
+        header("location: ../../frontend/index.php?error=forbidden");
+        exit();
+    }
+}
+
+public function Validate_Credentials($row) {
+    if($row != NULL) {
             $_SESSION['email'] = $row['Uni_Email']; //storing info while user logged in
             $_SESSION['UserID'] = $row['User_ID'];
             $_SESSION['role'] = $row['Role'];}
@@ -88,19 +144,7 @@ if ($this->conn->connect_error) { //if connection fails kill it and print messag
             
             header("location: ../../frontend/index.php");
         }
-    }
-//method to kill the session of the user and log them out.
-public function Log_out() {
-    $_SESSION = [];
-    session_destroy();
-
-    header("location: ../../frontend/index.php");
-    exit();
-}
-
-
-public function Validate_Credentials($email, $password) {
-
+   
 
 }
 
