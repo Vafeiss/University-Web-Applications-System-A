@@ -25,7 +25,7 @@ Paraskevas Vafeiadis
 Added the log out method to the class and created a controller to handle the log out process
 Paraskevas Vafeiadis
 
-27-feb-2026 v1.0
+28-feb-2026 v1.0
 Pre-final version of the class it fully works needs enchans **testing** and review added NEW check_Session for security measures
 Paraskevas Vafeiadis
 */
@@ -37,7 +37,6 @@ private $conn;
 public function __construct() {
     //creating an obj of the mysql connection and connect to the database 
     $this->conn = new mysqli("localhost", "root", "", "advicut");
-
 if ($this->conn->connect_error) { //if connection fails kill it and print message
     die("Connection failed: " . $this->conn->connect_error);
     $this ->conn->set_charset("utf8mb4");
