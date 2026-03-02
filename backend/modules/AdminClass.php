@@ -34,7 +34,7 @@ class Admin extends Users
     // Get all the students and their details
     public function getStudents()
     {
-        return $this->conn->query("SELECT Student_ID, External_ID, First_name, Last_Name, Year FROM student_info");
+        return $this->conn->query("SELECT Student_ID, StuExternal_ID, First_name, Last_Name, Year , Advisor_ID FROM student_info");
     }
 
     // Add an advisor to the database, also create a user account with a temp password.
@@ -173,6 +173,45 @@ class Admin extends Users
         fclose($handle);
         return ['added' => $added, 'skipped' => $skipped, 'errors' => $errors];
     }
+
+      public function addStudent(?string $externalId, string $first, string $last, string $email, string $year, string $advisorID): bool
+    {
+        if ($first === '' || $last === '' || $email === '' || $year === '') {
+            return false;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        // check if advisor already exists by email
+        $stmt1 = $this->conn->prepare('SELECT User_ID FROM users WHERE Uni_Email = ? LIMIT 1');
+        $stmt1->bind_param('s', $email);
+        $stmt1->execute();
+        $Result = $stmt1->get_result();
+        if ($Result && $Result->num_rows > 0) {
+            return false;
+        }
+
+        // generate temporary password and create users record
+        $TempPassword = $this->generateTempPassword(12);
+        $hashedTempPassword = password_hash($TempPassword, PASSWORD_DEFAULT);
+        $stmt = $this->conn->prepare('INSERT INTO users (Uni_Email, Password, Role) VALUES (?, ?, "Student")');
+        $stmt->bind_param('ss', $email, $hashedTempPassword);
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        // insert student_info row linked to the newly created user id
+        $studentID = $this->conn->insert_id;
+        $stmt2 = $this->conn->prepare(
+            'INSERT INTO student_info (Student_ID, StuExternal_ID, First_name, Last_Name, Year, Advisor_ID) VALUES (?, ?, ?, ?, ?, ?)' );
+        
+        $exactValues = ($externalId === null || $externalId === '') ? null : $externalId;
+        $stmt2->bind_param('isssss', $studentID, $exactValues, $first, $last, $year, $advisorID);
+        return $stmt2->execute();
+    }
+
 
     // randomly generate a temporary password for new users.
     private function generateTempPassword(int $length = 8): string

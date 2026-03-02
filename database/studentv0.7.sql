@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 01, 2026 at 07:53 PM
+-- Generation Time: Mar 02, 2026 at 05:28 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,45 +24,47 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `advisor_info`
+-- Table structure for table `student_info`
 --
 
-CREATE TABLE `advisor_info` (
-  `Advisor_ID` int(11) NOT NULL,
-  `External_ID` int(11) NOT NULL,
+CREATE TABLE `student_info` (
+  `Student_ID` int(11) NOT NULL,
+  `StuExternal_ID` int(11) NOT NULL,
   `First_name` varchar(50) NOT NULL,
   `Last_Name` varchar(50) NOT NULL,
-  `Phone` varchar(12) NOT NULL,
-  `Department_Name` varchar(100) NOT NULL
+  `Year` int(11) NOT NULL,
+  `Advisor_ID` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `advisor_info`
+-- Dumping data for table `student_info`
 --
 
-INSERT INTO `advisor_info` (`Advisor_ID`, `External_ID`, `First_name`, `Last_Name`, `Phone`, `Department_Name`) VALUES
-(30001, 1123, 'test', 'test', '12131415', 'HMMHY');
+INSERT INTO `student_info` (`Student_ID`, `StuExternal_ID`, `First_name`, `Last_Name`, `Year`, `Advisor_ID`) VALUES
+(30002, 27407, 'Paraskevas', 'Vafeiadis', 3, 30078);
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `advisor_info`
+-- Indexes for table `student_info`
 --
-ALTER TABLE `advisor_info`
-  ADD PRIMARY KEY (`Advisor_ID`),
-  ADD UNIQUE KEY `External_ID` (`External_ID`);
+ALTER TABLE `student_info`
+  ADD PRIMARY KEY (`Student_ID`),
+  ADD UNIQUE KEY `External_ID` (`StuExternal_ID`),
+  ADD KEY `fk_student_advisor` (`Advisor_ID`);
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `advisor_info`
+-- Constraints for table `student_info`
 --
-ALTER TABLE `advisor_info`
-  ADD CONSTRAINT `fk_advisor_user` FOREIGN KEY (`Advisor_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `student_info`
+  ADD CONSTRAINT `fk_student_advisor` FOREIGN KEY (`Advisor_ID`) REFERENCES `advisor_info` (`External_ID`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_student_user` FOREIGN KEY (`Student_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

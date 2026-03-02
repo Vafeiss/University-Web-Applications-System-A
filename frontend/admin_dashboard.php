@@ -33,7 +33,8 @@ $students = $user->getStudents();
   <div class="container-fluid">
     <span class="navbar-brand fw-bold">Administrator Portal</span>
 
-    <form action="../backend/controllers/logout.php" method="post">
+    <form action="../backend/modules/dispatcher.php" method="POST">
+      <input type="hidden" name="action" value="logout">
       <button class="btn btn-outline-danger">Logout</button>
     </form>
   </div>
@@ -154,7 +155,7 @@ $students = $user->getStudents();
                 <small><?= htmlspecialchars($advisor['Department_Name']) ?></small>
                 <?php if (!empty($advisor['Phone'])): ?>
                   <br>
-                  <small>📞 <?= htmlspecialchars($advisor['Phone']) ?></small>
+                  <small>Phone Number:  <?= htmlspecialchars($advisor['Phone']) ?></small>
                 <?php endif; ?>
               </div>
 
@@ -181,10 +182,63 @@ $students = $user->getStudents();
 
           <?php while ($student = $students->fetch_assoc()): ?>
             <li class="list-group-item">
-              <?= htmlspecialchars($student['External_ID'] . ' ' . $student['First_name'] . ' ' . $student['Last_Name']) ?>
-              (<?= htmlspecialchars($student['Student_ID']) ?>)
+              <?= htmlspecialchars($student['StuExternal_ID'] . ' ' . $student['First_name'] . ' ' . $student['Last_Name']) ?>
+              Advisor's ID: <?= htmlspecialchars($student['Advisor_ID']) ?>
             </li>
           <?php endwhile; ?>
+            
+          <div class="card mb-3">
+            <div class="card-header">Add Students</div>
+              <div class="card-body">
+
+          <form action="../backend/controllers/add_student.php" method="post" class="row g-3" enctype="multipart/form-data">
+
+
+            <div class="col-md-6">
+              <input type="text" name="first_name" class="form-control" placeholder="First Name" required>
+            </div>
+
+            <div class="col-md-6">
+              <input type="text" name="external_id" class="form-control" placeholder="Student ID">
+            </div>
+            <div class="col-md-6">
+              <input type="text" name="last_name" class="form-control" placeholder="Last Name" required>
+            </div>
+
+            <div class="col-md-6">
+              <input type="email" name="email" class="form-control" placeholder="Email" required>
+            </div>
+
+            <div class="col-md-6">
+              <input type="text" name="phone" class="form-control" placeholder="Year">
+            </div>
+
+            <div class="col-md-6">
+              <input type="text" name="advisor ID" class="form-control" placeholder="Advisor ID" required>
+            </div>
+
+            <div class="col-12">
+              <button class="btn btn-primary">Register Student</button>
+          </form>
+        </div>
+      </div>
+
+    <div class="card mb-3">
+        <div class="card-header">Students' CSV File</div>
+      <div class="card-body">
+    <form action="../backend/controllers/add_student.php" method="post" class="row g-3" enctype="multipart/form-data">
+          <div class="col-12">
+              <label for="csv_file" class="form-label">Upload Multiple Students in a .csv Format</label>
+              <input type="file" name="csv_file" id="csv_file" accept="text/csv,application/vnd.ms-excel" class="form-control">
+          </div>
+          <div class="col-12">
+              <button class="btn btn-primary">Register Students</button>
+          </div>
+    </form>
+          </div>
+      </div>
+    </div>
+
 
         </ul>
 
