@@ -4,7 +4,7 @@ Description: This is the dashboard of the admin.
 Paraskevas Vafeiadis
 01-Mar-26 v0.1
 Inputs: CSV file , Information of advisors
-Outputs: Successful messages 
+Outputs: Successful messages
 Error Messages: If the fields are empty , if not a csv file
 Files in Use: AdminClass.php
 
@@ -137,7 +137,7 @@ $students = $user->getStudents();
               <button class="btn btn-primary">Register Advisor</button>
             </div>
     </form>
-         </div>
+        </div>
       </div>
     </div>
 
@@ -184,6 +184,12 @@ $students = $user->getStudents();
             <li class="list-group-item">
               <?= htmlspecialchars($student['StuExternal_ID'] . ' ' . $student['First_name'] . ' ' . $student['Last_Name']) ?>
               Advisor's ID: <?= htmlspecialchars($student['Advisor_ID']) ?>
+
+              <form action="../backend/controllers/delete_student.php" method="post">
+                <input type="hidden" name="student_ID" value="<?= $student['Student_ID'] ?>">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+
             </li>
           <?php endwhile; ?>
             
