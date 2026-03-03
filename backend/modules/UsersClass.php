@@ -46,20 +46,20 @@ if ($this->conn->connect_error) { //if connection fails kill it and print messag
     //method to log in the user by checking email and password to the advicut database
     public function Log_in(string $email, string $password) {
         //query to get all the students where email and password match the input parameters
-        $sql = "SELECT User_ID , Uni_Email , Role , Password FROM Users WHERE Uni_Email = ? LIMIT 1";
+        $sql = "SELECT User_ID , Uni_Email , Role , Password FROM users WHERE Uni_Email = ? LIMIT 1";
         $stmt1 = $this->conn->prepare($sql);
         $stmt1->bind_param("s", $email); //make the query as a prepared statement to prevent attacks
         $stmt1->execute();
         $result1 = $stmt1->get_result();
 
         if ($result1->num_rows !== 1) { //error handling if email not found go back to index
-            header("Location: ../../frontend/index.php?error=invalid");
+            header("Location: ../../frontend/index.php?error=invalid1");
             exit();
         }
 
         $row = $result1->fetch_assoc();//error handling if password wrong go bakc to index
         if (!password_verify($password, $row["Password"])) {
-            header("Location: ../../frontend/index.php?error=invalid");
+            header("Location: ../../frontend/index.php?error=invalid2");
             exit();
         }
 
@@ -91,7 +91,7 @@ public function Check_Session(string $requiredRole = null) {
     }
 
     //query to get the row froim the data base
-    $stmt = $this->conn->prepare("SELECT Uni_Email, Role FROM Users WHERE User_ID = ? LIMIT 1");
+    $stmt = $this->conn->prepare("SELECT Uni_Email, Role FROM users WHERE User_ID = ? LIMIT 1");
     $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -154,7 +154,7 @@ public function Change_Password(int $userId, string $currentPassword, string $ne
         return false;
     }
     $stmt = $this->conn->prepare(
-        "SELECT Password FROM Users WHERE User_ID = ? LIMIT 1"
+        "SELECT Password FROM users WHERE User_ID = ? LIMIT 1"
     );
 
     $stmt->bind_param("i", $userId); //get the current of password to verify
@@ -177,7 +177,7 @@ public function Change_Password(int $userId, string $currentPassword, string $ne
 
     //update the database with the new password
     $uploadtodb = $this->conn->prepare(
-        "UPDATE Users SET Password = ? WHERE User_ID = ?"
+        "UPDATE users SET Password = ? WHERE User_ID = ?"
     );
     $uploadtodb->bind_param("si", $newPasswordhashed, $userId);
     return $uploadtodb->execute();

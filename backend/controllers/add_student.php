@@ -23,36 +23,37 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// If a CSV file was uploaded use it and call addAdvisorByCSV
+// If a CSV file was uploaded use it and call addStudentByCSV
 if (isset($_FILES['csv_file']) && is_uploaded_file($_FILES['csv_file']['tmp_name']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
     $tmp = $_FILES['csv_file']['tmp_name'];
-    $result = $admin->addAdvisorByCSV($tmp);
+    $result = $admin->addStudentByCSV($tmp);
     if ($result === false) {
         header('Location: ../../frontend/admin_dashboard.php?error=csv_invalid');
         exit();
     }
 
-    // build a concise success message
+    // build a success message
     $added = intval($result['added'] ?? 0);
     $skipped = intval($result['skipped'] ?? 0);
     header('Location: ../../frontend/admin_dashboard.php?success=' . urlencode("csv_imported_added_{$added}_skipped_{$skipped}"));
     exit();
 }
 
-$external_id = trim($_POST['external_id'] ?? '');
-$first_name = trim($_POST['first_name'] ?? '');
-$last_name  = trim($_POST['last_name'] ?? '');
-$email      = trim($_POST['email'] ?? '');
-$year       = trim($_POST['year'] ?? '');
-$advisor_id = trim($_POST['advisors_id'] ?? '');
+    $external_id = trim($_POST['external_id'] ?? '');
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name'] ?? '');
+    $email      = trim($_POST['email'] ?? '');
+    $year       = trim($_POST['year'] ?? '');
+    $advisor_id = trim($_POST['advisors_id'] ?? '');
+    $advisor_id_int = intval($advisor_id);
 
-//ERROR HERE
-if ($first_name === '' || $last_name === '' || $email === '' || $advisor_id === 0 || $year === '') {
+// validate required fields
+if ($first_name === '' || $last_name === '' || $email === '' || $advisor_id_int <= 0 || $year === '') {
     header('Location: ../../frontend/admin_dashboard.php?error=empty_fields');
     exit();
 }
 
-$success = $admin->addStudent($external_id, $first_name, $last_name, $email, $year, $advisor_id);
+$success = $admin->addStudent($external_id, $first_name, $last_name, $email, $year, $advisor_id_int);
 if ($success) {
     header('Location: ../../frontend/admin_dashboard.php?success=Student added Successfully');
 } else {

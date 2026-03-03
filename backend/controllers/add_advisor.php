@@ -23,22 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-// If a CSV file was uploaded use it and call addAdvisorByCSV
-if (isset($_FILES['csv_file']) && is_uploaded_file($_FILES['csv_file']['tmp_name']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
-    $tmp = $_FILES['csv_file']['tmp_name'];
-    $result = $admin->addAdvisorByCSV($tmp);
-    if ($result === false) {
-        header('Location: ../../frontend/admin_dashboard.php?error=csv_invalid');
-        exit();
-    }
-
-    // build a concise success message
-    $added = intval($result['added'] ?? 0);
-    $skipped = intval($result['skipped'] ?? 0);
-    header('Location: ../../frontend/admin_dashboard.php?success=' . urlencode("csv_imported_added_{$added}_skipped_{$skipped}"));
-    exit();
-}
-
 $external_id = trim($_POST['external_id'] ?? '');
 $first_name = trim($_POST['first_name'] ?? '');
 $last_name  = trim($_POST['last_name'] ?? '');

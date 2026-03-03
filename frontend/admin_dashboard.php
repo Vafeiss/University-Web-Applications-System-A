@@ -124,21 +124,6 @@ $students = $user->getStudents();
           </form>
         </div>
       </div>
-
-    <div class="card mb-3">
-        <div class="card-header">Advisors' CSV File</div>
-        <div class="card-body">
-    <form action="../backend/controllers/add_advisor.php" method="post" class="row g-3" enctype="multipart/form-data">
-      <div class="col-12">
-              <label for="csv_file" class="form-label">Upload Multiple Advisors in a .csv Format</label>
-              <input type="file" name="csv_file" id="csv_file" accept="text/csv,application/vnd.ms-excel" class="form-control">
-            </div>
-            <div class="col-12">
-              <button class="btn btn-primary">Register Advisor</button>
-            </div>
-    </form>
-        </div>
-      </div>
     </div>
 
       <div class="card shadow-sm">
@@ -216,11 +201,11 @@ $students = $user->getStudents();
             </div>
 
             <div class="col-md-6">
-              <input type="text" name="phone" class="form-control" placeholder="Year">
+              <input type="text" name="year" class="form-control" placeholder="Year">
             </div>
 
             <div class="col-md-6">
-              <input type="text" name="advisor ID" class="form-control" placeholder="Advisor ID" required>
+              <input type="text" name="advisors_id" class="form-control" placeholder="Advisor ID" required>
             </div>
 
             <div class="col-12">

@@ -14,10 +14,12 @@ Files in use: Bootstrap CSS from the web
 Paraskevas Vafeiadis
 */
 
+$error = " ";
+$password = '1234';
+$hashpassword = password_hash($password , PASSWORD_DEFAULT );
+echo $hashpassword;
 ?>
-<p?php
-$error = " "
-?>
+
 <!DOCTYPE html>
 <html>
     <head>
