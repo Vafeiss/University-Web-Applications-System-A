@@ -45,10 +45,10 @@ if (isset($_FILES['csv_file']) && is_uploaded_file($_FILES['csv_file']['tmp_name
     $email      = trim($_POST['email'] ?? '');
     $year       = trim($_POST['year'] ?? '');
     $advisor_id = trim($_POST['advisors_id'] ?? '');
-    $advisor_id_int = intval($advisor_id);
+    $advisor_id_int = $advisor_id !== '' ? intval($advisor_id) : null;
 
 // validate required fields
-if ($first_name === '' || $last_name === '' || $email === '' || $advisor_id_int <= 0 || $year === '') {
+if ($first_name === '' || $last_name === '' || $email === '' || $year === '') {
     header('Location: ../../frontend/admin_dashboard.php?error=empty_fields');
     exit();
 }

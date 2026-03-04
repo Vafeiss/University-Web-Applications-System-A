@@ -143,8 +143,6 @@ public function Validate_Credentials($row) {
             
             header("location: ../../frontend/index.php");
         }
-   
-
 }
 
 //method to reset the given password of the user to his own.

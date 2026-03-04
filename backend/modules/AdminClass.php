@@ -17,7 +17,11 @@
   03-Mar-2026 v0.3
   Updated Database removed redunduncy and adjusted the code to it. Also removed csv addition for advisors 
   ""NOTES: NEED TO MAKE IT WHEN ADDING A USER FIRST LATTER OF FIRST/LAST NAME TO BE UPPERCASE""
-  Paraskevas Vafeiadis 
+  Paraskevas Vafeiadis
+
+  04-Mar-2026 v0.4
+  Finialise CSV addition for the students added Delete/Add supervisor
+  Paraskevas Vafeiadis
 */
 require_once __DIR__ . '/UsersClass.php';
 
@@ -47,6 +51,9 @@ class Admin extends Users
         return $this->conn->query("SELECT User_ID AS Student_ID, External_ID AS StuExternal_ID, First_name, Last_Name, Year FROM users WHERE Role = 'Student'");
     }
 
+    public function getSuperUsers(){
+        return $this->conn->query("SELECT Uni_Email as Email , User_ID FROM users WHERE Role = 'SuperUser'");
+    }
     // Add an advisor to the database, also create a user account with a temp password.
     public function addAdvisor(?string $externalId, string $first, string $last, string $email, string $phone, string $department): bool
     {
@@ -96,7 +103,7 @@ class Admin extends Users
         return ['added' => $added, 'skipped' => $skipped, 'errors' => $errors];
     }
 
-    public function addStudent(?string $externalid, string $first, string $last, string $email, string $year, int $advisorID): bool
+    public function addStudent(?string $externalid, string $first, string $last, string $email, string $year, ?int $advisorID = null): bool
     {
         if ($first === '' || $last === '' || $email === '' || $year === '') {
             return false;
@@ -180,7 +187,7 @@ class Admin extends Users
 
             if ($isHeader && !empty($header)) {
                 $map = array_combine($header, $r);
-                $external_id = $map['external_id'] ?? $map['id'] ?? '';
+                $external_id = $map['student_id'] ?? $map['id'] ?? '';
                 $first = $map['first_name'] ?? $map['first'] ?? $map['firstname'] ?? '';
                 $last = $map['last_name'] ?? $map['last'] ?? $map['lastname'] ?? '';
                 $email = $map['email'] ?? $map['uni_email'] ?? '';
@@ -194,15 +201,32 @@ class Admin extends Users
             $last = trim((string)$last);
             $email = trim((string)$email);
             $year = trim((string)$year);
-            $advisorid = trim((int)$advisorid);
+            $advisorid = (int)trim((string)$advisorid);
 
-            if ($first === '' || $last === '' || $email === '' || $advisorid == 0) {
+            if ($first === '' || $last === '' || $email === '' || $external_id <= 0) {
                 $skipped++;
                 continue;
             }
 
+           // verify advisor if provided
+            if (!empty($advisorid) && $advisorid > 0) {
+
+                $advisorCheck = $this->conn->prepare('SELECT User_ID FROM users WHERE User_ID = ? AND Role = "Advisor"');
+                $advisorCheck->bind_param('i', $advisorid);
+                $advisorCheck->execute();
+                $advisorResult = $advisorCheck->get_result();
+
+            // if advisor not found set it to NULL
+                if (!$advisorResult || $advisorResult->num_rows === 0) {
+                    $advisorid = null;
+                }
+            }
+            else {
+                $advisorid = null;
+            }
+
             //call addstudents and start adding each row
-            $success = $this->addStudent($external_id, $first, $last, $email, $year, $advisorid);
+            $success = $this->addStudent($external_id, $first, $last, $email, $year, is_null($advisorid) ? null : $advisorid);
             if ($success) {
                 $added++;
             } else {
@@ -227,11 +251,7 @@ class Admin extends Users
         return $stmt->execute();
     }
 
-    public function addSuperUser(string $email): bool
-    {
-        if ($email === '') {
-            return false;
-        }
+    public function addSuperUser(string $email): bool  {
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
@@ -242,29 +262,31 @@ class Admin extends Users
         $check->bind_param('s', $email);
         $check->execute();
         $Result = $check->get_result();
-        if ($Result && $Result->num_rows > 0) {
+        if ($Result->num_rows > 0) {
             return false;
         }
 
-        // generate temporary password and create users record
+        //generate temporary password and create users record
         //HAVE TO SEND THEM THE TempPassword
         $TempPassword = $this->generateTempPassword(12);
         $hashedTempPassword = password_hash($TempPassword, PASSWORD_DEFAULT);
-
         $stmt = $this->conn->prepare('INSERT INTO users (Uni_Email, Password, Role , First_Name , Last_Name) VALUES (?, ?, "SuperUser", "SuperUser" , "SuperUser" )');
         $stmt->bind_param('ss', $email, $hashedTempPassword);
         if (!$stmt->execute()) {
             return false;
         }
+
+        return true;
     }
+
     //Delete SuperUser
-    public function deleteSuperUser(int $User_ID): bool   {
-        if ($User_ID <= 0) {
+    public function deleteSuperUser(int $user_ID): bool   {
+        if ($user_ID <= 0) {
             return false;
         }
 
         $stmt = $this->conn->prepare('DELETE FROM users WHERE User_ID = ?');
-        $stmt->bind_param('i', $User_ID);
+        $stmt->bind_param('i', $user_ID);
         return $stmt->execute();
     }
 

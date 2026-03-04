@@ -16,6 +16,7 @@ $user->Check_Session("Admin");
 
 $advisors = $user->getAdvisors();
 $students = $user->getStudents();
+$superusers = $user->getSuperUsers();
 ?>
 
 
@@ -51,7 +52,7 @@ $students = $user->getStudents();
     </div>
   <?php endif; ?>
 
- 
+
   <ul class="nav nav-tabs" id="adminTabs">
     <li class="nav-item">
       <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#advisors">
@@ -62,6 +63,12 @@ $students = $user->getStudents();
     <li class="nav-item">
       <button class="nav-link" data-bs-toggle="tab" data-bs-target="#students">
         Manage Students
+      </button>
+    </li>
+
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#superusers">
+        Manage SuperUsers
       </button>
     </li>
   </ul>
@@ -86,7 +93,7 @@ $students = $user->getStudents();
             </div>
           </div>
         </div>
-      </div> 
+      </div>
 
       <div class="card mb-3">
         <div class="card-header">Add Advisor</div>
@@ -100,7 +107,7 @@ $students = $user->getStudents();
             </div>
 
             <div class="col-md-6">
-              <input type="text" name="external_id" class="form-control" placeholder="External ID">
+              <input type="text" name="external_id" class="form-control" placeholder="Advisor ID">
             </div>
             <div class="col-md-6">
               <input type="text" name="last_name" class="form-control" placeholder="Last Name" required>
@@ -120,7 +127,7 @@ $students = $user->getStudents();
 
             <div class="col-12">
               <button class="btn btn-primary">Register Advisor</button>
-
+            
           </form>
         </div>
       </div>
@@ -140,7 +147,7 @@ $students = $user->getStudents();
                 <small><?= htmlspecialchars($advisor['Department_Name']) ?></small>
                 <?php if (!empty($advisor['Phone'])): ?>
                   <br>
-                  <small>Phone Number:  <?= htmlspecialchars($advisor['Phone']) ?></small>
+                  <small>Phone Number: <?= htmlspecialchars($advisor['Phone']) ?></small>
                 <?php endif; ?>
               </div>
 
@@ -177,10 +184,14 @@ $students = $user->getStudents();
 
             </li>
           <?php endwhile; ?>
-            
-          <div class="card mb-3">
-            <div class="card-header">Add Students</div>
-              <div class="card-body">
+
+        </ul>
+
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">Add Students</div>
+          <div class="card-body">
 
           <form action="../backend/controllers/add_student.php" method="post" class="row g-3" enctype="multipart/form-data">
 
@@ -205,42 +216,72 @@ $students = $user->getStudents();
             </div>
 
             <div class="col-md-6">
-              <input type="text" name="advisors_id" class="form-control" placeholder="Advisor ID" required>
+              <input type="text" name="advisors_id" class="form-control" placeholder="Advisor ID (optional)">
             </div>
 
             <div class="col-12">
               <button class="btn btn-primary">Register Student</button>
+            </div>
           </form>
         </div>
       </div>
 
-    <div class="card mb-3">
+      <div class="card mb-3">
         <div class="card-header">Students' CSV File</div>
-      <div class="card-body">
-    <form action="../backend/controllers/add_student.php" method="post" class="row g-3" enctype="multipart/form-data">
-          <div class="col-12">
+        <div class="card-body">
+          <form action="../backend/controllers/add_student.php" method="post" class="row g-3" enctype="multipart/form-data">
+            <div class="col-12">
               <label for="csv_file" class="form-label">Upload Multiple Students in a .csv Format</label>
+              <small class="form-text text-muted d-block mb-2">CSV columns: student_id, first_name, last_name, email, year (required); advisor_id (optional)</small>
               <input type="file" name="csv_file" id="csv_file" accept="text/csv,application/vnd.ms-excel" class="form-control">
-          </div>
-          <div class="col-12">
+            </div>
+            <div class="col-12">
               <button class="btn btn-primary">Register Students</button>
-          </div>
-    </form>
-          </div>
+            </div>
+          </form>
+        </div>
       </div>
+
     </div>
 
+    <div class="tab-pane fade" id="superusers">
+      <div class="card mb-3">
+            <div class="card-header">Add SuperUser</div>
+              <div class="card-body">
 
+            <form action="../backend/controllers/add_superuser.php" method="post" class="row g-3" enctype="multipart/form-data">
+
+            <div class="col-12">
+              <input type="text" name="email" class="form-control" placeholder="Enter Email" required>
+              <p>   </p>
+              <button class="btn btn-primary">Register SuperUser</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <div class="card shadow-sm">
+        <div class="card-header">SuperUsers</div>
+        <ul class="list-group list-group-flush">
+
+          <?php while ($superuser = $superusers->fetch_assoc()): ?>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+
+              <div>
+                <strong><?= htmlspecialchars($superuser['Email']) ?></strong>
+              </div>
+
+              <form action="../backend/controllers/delete_superuser.php" method="post">
+                <input type="hidden" name="User_ID" value="<?= $superuser['User_ID'] ?>">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+
+            </li>
+          <?php endwhile; ?>
         </ul>
-
       </div>
-
     </div>
-
   </div>
-
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
