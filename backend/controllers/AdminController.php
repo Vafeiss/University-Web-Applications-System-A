@@ -6,11 +6,16 @@
   06-Mar-2026 v0.1
   Inputs: Depends on the functions but POST/GET requests
   Outputs: Redirections to the main dashboard
-  Files in Uses: AdminClass.php , routes.php , router.php , dispatcher.php*/
+  Files in Uses: AdminClass.php , routes.php , router.php , dispatcher.php
+  
+  
+  08-Mar-2026 v0.2 
+  Added new function to call the participantclass and begin the replacement of students*/
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../modules/AdminClass.php';
+require_once __DIR__ . '/../modules/ParticipantsClass.php';
 
 class AdminController {
 
@@ -166,6 +171,42 @@ class AdminController {
         }
 
         header("Location: ../../frontend/admin_dashboard.php");
+        exit();
+    }
+
+    //get the post request from the frontend and call the function from adminclass
+    public function assignStudentsToAdvisor()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        //validate IDs
+        $advisorInput = $_POST['advisor_external_id'] ?? null;
+        $advisorExternalId = ($advisorInput === null ? 0 : (int)$advisorInput);
+
+        if ($advisorExternalId <= 0) {
+            header("Location: ../../frontend/admin_dashboard.php?error=invalid_advisor");
+            exit();
+        }
+
+        //get student ID
+        $studentIds = $_POST['student_external_ids'] ?? [];
+        if (!is_array($studentIds)) {
+            $studentIds = [];
+        }
+
+        //replace the students assigned to the advisor
+        $participants = new Participants_Processing();
+        $saved = $participants->Replace_Advisor_Students($advisorExternalId, $studentIds);
+
+        if (!$saved) {
+            header("Location: ../../frontend/admin_dashboard.php?error=assign_students_failed");
+            exit();
+        }
+
+        header("Location: ../../frontend/admin_dashboard.php?success=students_assigned");
         exit();
     }
 

@@ -11,12 +11,22 @@ Files in Use: AdminClass.php
 */
 require_once('init.php');
 require_once('../backend/modules/AdminClass.php');
+require_once('../backend/modules/ParticipantsClass.php');
 $user = new Admin();
 $user->Check_Session("Admin");
 
 $advisors = $user->getAdvisors();
 $students = $user->getStudents();
 $superusers = $user->getSuperUsers();
+
+$assignAdvisorsResult = $user->getAdvisors();
+$assignStudentsResult = $user->getStudents();
+$assignAdvisors = $assignAdvisorsResult ? $assignAdvisorsResult->fetch_all(MYSQLI_ASSOC) : [];
+$assignStudents = $assignStudentsResult ? $assignStudentsResult->fetch_all(MYSQLI_ASSOC) : [];
+
+$participants = new Participants_Processing();
+$assignmentMap = $participants->Get_Student_Advisor();
+$studentAssignmentMap = $participants->Assign_Students_Advisors();
 ?>
 
 
@@ -69,6 +79,12 @@ $superusers = $user->getSuperUsers();
     <li class="nav-item">
       <button class="nav-link" data-bs-toggle="tab" data-bs-target="#superusers">
         Manage SuperUsers
+      </button>
+    </li>
+
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#assignstudents">
+        Assign Students
       </button>
     </li>
   </ul>
@@ -180,7 +196,12 @@ $superusers = $user->getSuperUsers();
           <?php while ($student = $students->fetch_assoc()): ?>
             <li class="list-group-item">
               <?= htmlspecialchars($student['StuExternal_ID'] . ' ' . $student['First_name'] . ' ' . $student['Last_Name']) ?>
-              Advisor's ID: <?= htmlspecialchars($student['Advisor_ID']) ?>
+              <?php
+                $studentId = (int)$student['StuExternal_ID'];
+                $advisorIds = $studentAssignmentMap[$studentId] ?? [];
+              ?>
+              Advisor's ID:
+              <?= htmlspecialchars(!empty($advisorIds) ? implode(', ', $advisorIds) : 'Not assigned') ?>
 
               <form action="../backend/modules/dispatcher.php" method="post">
                 <input type="hidden" name="action" value="/student/delete">
@@ -296,6 +317,65 @@ $superusers = $user->getSuperUsers();
             </li>
           <?php endwhile; ?>
         </ul>
+      </div>
+    </div>
+ 
+    <div class="tab-pane fade" id="assignstudents">
+      <div class="card shadow-sm">
+        <div class="card-header">Assign Students to Advisors</div>
+        <div class="card-body">
+          <?php if (empty($assignAdvisors)): ?>
+            <p class="text-muted mb-0">No advisors found.</p>
+          <?php else: ?>
+            <div class="accordion" id="assignAdvisorAccordion">
+              <?php foreach ($assignAdvisors as $advisor): ?>
+                <?php
+                  $advisorUserId = (int)$advisor['Advisor_ID'];
+                  $advisorExternalId = (int)$advisor['External_ID'];
+                  $collapseId = 'assignAdvisor' . $advisorUserId;
+                  $headingId = 'assignHeading' . $advisorUserId;
+                ?>
+                <div class="accordion-item">
+                  <h2 class="accordion-header" id="<?= $headingId ?>">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?= $collapseId ?>" aria-expanded="false" aria-controls="<?= $collapseId ?>">
+                      <?= htmlspecialchars($advisor['External_ID'] . ' ' . $advisor['First_name'] . ' ' . $advisor['Last_Name']) ?>
+                    </button>
+                  </h2>
+                  <div id="<?= $collapseId ?>" class="accordion-collapse collapse" aria-labelledby="<?= $headingId ?>" data-bs-parent="#assignAdvisorAccordion">
+                    <div class="accordion-body">
+                      <form action="../backend/modules/dispatcher.php" method="post">
+                        <input type="hidden" name="action" value="/advisor/students/assign">
+                        <input type="hidden" name="advisor_external_id" value="<?= $advisorExternalId ?>">
+
+                        <div class="row g-2">
+                          <?php foreach ($assignStudents as $student): ?>
+                            <?php
+                              $studentExternalId = (int)$student['StuExternal_ID'];
+                              $checkboxId = 'advisor' . $advisorUserId . 'student' . (int)$student['Student_ID'];
+                              $isChecked = isset($assignmentMap[$advisorExternalId]) && isset($assignmentMap[$advisorExternalId][$studentExternalId]);
+                            ?>
+                            <div class="col-md-6">
+                              <div class="form-check border rounded p-2">
+                                <input class="form-check-input" type="checkbox" name="student_external_ids[]" value="<?= $studentExternalId ?>" id="<?= $checkboxId ?>" <?= $isChecked ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="<?= $checkboxId ?>">
+                                  <?= htmlspecialchars($student['StuExternal_ID'] . ' ' . $student['First_name'] . ' ' . $student['Last_Name']) ?>
+                                </label>
+                              </div>
+                            </div>
+                          <?php endforeach; ?>
+                        </div>
+
+                        <div class="mt-3">
+                          <button class="btn btn-primary">Save Assignment</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          <?php endif; ?>
+        </div>
       </div>
     </div>
   </div>

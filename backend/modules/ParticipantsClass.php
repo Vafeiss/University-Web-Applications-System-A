@@ -1,4 +1,12 @@
 <?php
+/* Name: ParicipantsClass
+   Description: This class is responsible for handling the processing of the assignment of students to advisors.
+   Paraskevas Vafeiadis
+   08-Mar-2026 v0.1
+   Inputs: Depends on the functions but mostly arrays of IDs
+   Outputs: Depends on the functions but mostly arrays of IDs or boolean values
+   Files in Use: routes.php, AdminController.php, admin_dashboard.php*/
+
 class Participants_Processing{
     private $conn;
 
@@ -10,30 +18,101 @@ class Participants_Processing{
     $this ->conn->set_charset("utf8mb4");
     }
 
-    
-    public function Assign_Students_Advisors(int $studentId, int $advisorId) {
-        $sql = "SELECT * FROM student_advsiors WHERE Student_ID = ? AND Advisor_ID = ?";
-        $stmt1 = $this->conn->prepare($sql);
-        $stmt1->bind_param("ii", $studentId, $advisorId); //
-        $stmt1->execute();
-        $result1 = $stmt1->get_result();
-        if ($result1->num_rows > 0) {
-            while ($row = $result1->fetch_assoc()) {
-                if ($row['Student_ID'] == $studentId && $row['Advisor_ID'] == $advisorId) {
-                    return false; // Return false if the student is already assigned to the advisor
+        public function Get_Student_Advisor(): array {
+            $sql = "SELECT Advisor_ID, Student_ID FROM student_advisors";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $map = [];
+
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $advisorId = (int)$row['Advisor_ID'];
+                    $studentId = (int)$row['Student_ID'];
+                    if (!isset($map[$advisorId])) {
+                        $map[$advisorId] = [];
+                    }
+                    $map[$advisorId][$studentId] = true;
                 }
             }
+
+            return $map;
         }
-        //if everythins is fine insert the pair into the table.
-        $sql = "INSERT INTO student_advsiors (Student_ID, Advisor_ID) VALUES (?, ?)";
-        $stmt2 = $this->conn->prepare($sql);
-        $stmt2->bind_param("ii", $studentId, $advisorId);
-        if ($stmt2->execute()) {
-            return true; // Return true if the update was successful
-        } else {
-            return false; // Return false if there was an error
+
+        public function Assign_Students_Advisors(): array {
+            $sql = "SELECT Student_ID, Advisor_ID FROM student_advisors";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $map = [];
+
+            if ($result) {
+                while ($row = $result->fetch_assoc()) {
+                    $studentId = (int)$row['Student_ID'];
+                    $advisorId = (int)$row['Advisor_ID'];
+                    if (!isset($map[$studentId])) {
+                        $map[$studentId] = [];
+                    }
+                    $map[$studentId][] = $advisorId;
+                }
+            }
+
+            return $map;
         }
-    }
+
+        public function Replace_Advisor_Students(int $advisorId, array $studentIds): bool {
+            if ($advisorId <= 0) {
+                return false;
+            }
+
+            $checkIds = [];
+            foreach ($studentIds as $studentId) {
+                $studentId = (int)$studentId;
+                if ($studentId > 0) {
+                    $checkIds[$studentId] = true;
+                }
+            }
+            $checkIds = array_keys($checkIds);
+            $this->conn->begin_transaction();
+
+            try {
+                $deleteStmt = $this->conn->prepare("DELETE FROM student_advisors WHERE Advisor_ID = ?");
+                $deleteStmt->bind_param("i", $advisorId);
+                if (!$deleteStmt->execute()) {
+                    throw new Exception('Failed to clear previous advisor assignments');
+                }
+
+                if (!empty($checkIds)) {
+                    $insertStmt = $this->conn->prepare("INSERT INTO student_advisors (Student_ID, Advisor_ID) VALUES (?, ?)");
+                    foreach ($checkIds as $studentId) {
+                        $insertStmt->bind_param("ii", $studentId, $advisorId);
+                        if (!$insertStmt->execute()) {
+                            throw new Exception('Failed to save advisor assignments');
+                        }
+                    }
+                }
+
+                $this->conn->commit();
+                return true;
+            } catch (Throwable $e) {
+                $this->conn->rollback();
+                return false;
+            }
+        }
+
+        public function Get_Advisor(int $studentid){
+            $sql = "SELECT Advisor_ID FROM student_advisors WHERE Student_ID = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("i", $studentid);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $row = $result->fetch_assoc();
+                return $row['Advisor_ID']; // Return the advisor ID
+            } else {
+                return null; // Return null if no advisor is assigned to the student
+            }
+        }
 
 }
 ?>

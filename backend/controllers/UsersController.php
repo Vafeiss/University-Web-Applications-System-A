@@ -1,7 +1,7 @@
 <?php
 /*Name: UsersController.php
-    Description: Convertion of all the controllers related to the user management into this one. Paired with the 
-    router and the dispatcher, this file is reponsible to be the bridge between the frontend and the backend for the usersclass
+  Description: Convertion of all the controllers related to the user management into this one. Paired with the 
+  router and the dispatcher, this file is reponsible to be the bridge between the frontend and the backend for the usersclass
   Paraskevas Vafeiadis
   06-Mar-2026 v0.1
   Inputs: Depends on the functions but POST/GET requests
