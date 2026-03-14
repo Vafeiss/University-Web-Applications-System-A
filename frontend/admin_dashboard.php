@@ -239,11 +239,12 @@ $activeSection = $_GET['section'] ?? 'advisors';
         </div>
 
         <div class="d-flex gap-2 mt-3 pt-3 border-top">
-          <button type="button" class="btn btn-outline-secondary btn-sm" id="editAdvisorBtn">
-            <i class="bi bi-pencil-square me-1"></i> Edit Selected
-          </button>
           <button type="submit" class="btn btn-danger btn-sm">
             <i class="bi bi-trash me-1"></i> Delete Selected
+          </button>
+
+          <button type="button" class="btn btn-primary btn-sm" id="editAdvisorBtn">
+            <i class="bi bi-pencil-square me-1"></i> Edit Selected
           </button>
         </div>
 
@@ -287,6 +288,7 @@ $activeSection = $_GET['section'] ?? 'advisors';
                 <th>ID</th>
                 <th>Email</th>
                 <th>Degree</th>
+                <th>Year</th>
                 <th>Advisor ID</th>
               </tr>
             </thead>
@@ -311,6 +313,7 @@ $activeSection = $_GET['section'] ?? 'advisors';
                 <td><?= htmlspecialchars($student['StuExternal_ID']) ?></td>
                 <td><?= htmlspecialchars($student['Email']) ?></td>
                 <td><?= htmlspecialchars($student['Degree']) ?></td>
+                <td><?= htmlspecialchars($student['Year'] ?? '') ?></td>
                 <td><?= htmlspecialchars($student['Advisor_ID'] ?? 'Unassigned') ?></td>
               </tr>
               <?php endwhile; ?>
@@ -319,11 +322,12 @@ $activeSection = $_GET['section'] ?? 'advisors';
         </div>
 
         <div class="d-flex gap-2 mt-3 pt-3 border-top">
-          <button type="button" class="btn btn-outline-secondary btn-sm" id="editStudentBtn">
-            <i class="bi bi-pencil-square me-1"></i> Edit Selected
-          </button>
           <button type="submit" class="btn btn-danger btn-sm">
             <i class="bi bi-trash me-1"></i> Delete Selected
+          </button>
+          
+          <button type="button" class="btn btn-primary btn-sm" id="editStudentBtn">
+            <i class="bi bi-pencil-square me-1"></i> Edit Selected
           </button>
         </div>
 
@@ -584,6 +588,7 @@ $activeSection = $_GET['section'] ?? 'advisors';
           <input type="hidden" name="action" value="/advisor/edit">
           <div class="row g-3">
             <div class="col-6">
+              
               <label class="form-label">First Name <span class="text-danger">*</span></label>
               <input type="text" name="first_name" id="editAdvisorFirstName" class="form-control" required>
             </div>
@@ -664,8 +669,8 @@ $activeSection = $_GET['section'] ?? 'advisors';
             <div class="col-12">
               <label class="form-label">Degree <span class="text-danger">*</span></label>
               <select name="degree" id="editStudentDegree" class="form-select" required>
-                <option value="1">Computer Engineer</option>
-                <option value="1">Informatics</option>
+                <option value="1">Computer Engineer & Informatics</option>
+                <option value="2">Electrical Engineering</option>
               </select>
             </div>
             <div class="col-12">
@@ -721,22 +726,22 @@ $activeSection = $_GET['section'] ?? 'advisors';
             </div>
             <div class="col-6">
               <label class="form-label">First Name <span class="text-danger">*</span></label>
-              <input type="text" name="first_name" class="form-control" placeholder="John" required>
+              <input type="text" name="first_name" class="form-control" placeholder="Andreas" required>
             </div>
             <div class="col-6">
               <label class="form-label">Last Name <span class="text-danger">*</span></label>
-              <input type="text" name="last_name" class="form-control" placeholder="Doe" required>
+              <input type="text" name="last_name" class="form-control" placeholder="Kyriakou" required>
             </div>
             <div class="col-12">
               <label class="form-label">Email <span class="text-danger">*</span></label>
-              <input type="email" name="email" class="form-control" placeholder="john.doe@student.university.edu" required>
+              <input type="email" name="email" class="form-control" placeholder="a.kyriakou@edu.cut.ac.cy" required>
             </div>
             <div class="col-12">
               <label class="form-label">Degree <span class="text-danger">*</span></label>
               <select name="degree" class="form-select" required>
                 <option value="" disabled selected>Select a degree…</option>
-                <option value="1">Computer Engineer</option>
-                <option value="1">Informatics</option>
+                <option value="1">Computer Engineer & Informatics</option>
+                <option value="2">Electrical Engineering</option>
               </select>
             </div>
             <div class="col-12">
@@ -872,6 +877,87 @@ document.querySelectorAll('.assign-search').forEach(input => {
     });
   });
 });
+
+//edit advisor script
+const editAdvisorBtn = document.getElementById('editAdvisorBtn');
+if (editAdvisorBtn) {
+  editAdvisorBtn.addEventListener('click', function () {
+    const checked = document.querySelectorAll('input[name="advisor_id[]"]:checked');
+
+    if (checked.length === 0) {
+      alert('Please select one advisor to edit.');
+      return;
+    }
+
+    if (checked.length > 1) {
+      alert('Please select only one advisor to edit.');
+      return;
+    }
+
+    const advisor = checked[0];
+    document.getElementById('editAdvisorFirstName').value = advisor.dataset.firstName || '';
+    document.getElementById('editAdvisorLastName').value = advisor.dataset.lastName || '';
+    document.getElementById('editAdvisorEmail').value = advisor.dataset.email || '';
+    document.getElementById('editAdvisorPhone').value = advisor.dataset.phone || '';
+    document.getElementById('editAdvisorExternalId').value = advisor.value || '';
+
+    const departmentSelect = document.getElementById('editAdvisorDepartment');
+    const departmentId = advisor.dataset.departmentId || '1';
+    departmentSelect.value = departmentId;
+
+    if (departmentSelect.value !== departmentId) {
+      const option = document.createElement('option');
+      option.value = departmentId;
+      option.textContent = `Department ${departmentId}`;
+      departmentSelect.appendChild(option);
+      departmentSelect.value = departmentId;
+    }
+
+    const editAdvisorModal = new bootstrap.Modal(document.getElementById('editAdvisorModal'));
+    editAdvisorModal.show();
+  });
+}
+
+//student edit script
+const editStudentBtn = document.getElementById('editStudentBtn');
+if (editStudentBtn) {
+  editStudentBtn.addEventListener('click', function () {
+    const checked = document.querySelectorAll('input[name="student_ID[]"]:checked');
+
+    if (checked.length === 0) {
+      alert('Please select one student to edit.');
+      return;
+    }
+
+    if (checked.length > 1) {
+      alert('Please select only one student to edit.');
+      return;
+    }
+
+    const student = checked[0];
+    document.getElementById('editStudentExternalId').value = student.dataset.externalId || '';
+    document.getElementById('editStudentFirstName').value = student.dataset.firstName || '';
+    document.getElementById('editStudentLastName').value = student.dataset.lastName || '';
+    document.getElementById('editStudentEmail').value = student.dataset.email || '';
+    document.getElementById('editStudentYear').value = student.dataset.year || '';
+    document.getElementById('editStudentAdvisor').value = student.dataset.advisorId || '';
+
+    const degreeSelect = document.getElementById('editStudentDegree');
+    const degreeId = student.dataset.degreeId || '1';
+    degreeSelect.value = degreeId;
+
+    if (degreeSelect.value !== degreeId) {
+      const option = document.createElement('option');
+      option.value = degreeId;
+      option.textContent = `Degree ${degreeId}`;
+      degreeSelect.appendChild(option);
+      degreeSelect.value = degreeId;
+    }
+
+    const editStudentModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+    editStudentModal.show();
+  });
+}
 
 //delete confirmation script
 ['advisorForm', 'studentForm', 'superuserForm'].forEach(id => {

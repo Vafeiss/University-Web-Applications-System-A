@@ -77,7 +77,7 @@ class Admin extends Users
     //get all the students and their details
     public function getStudents()
     {
-        return $this->conn->query("SELECT users.User_ID AS Student_ID, users.External_ID AS StuExternal_ID, users.First_name, users.Last_Name, users.Uni_Email AS Email, users.Department_ID AS Degree_ID, users.Year, degree.Department_Name AS Degree, sa.Advisor_ID FROM users JOIN degree ON users.Department_ID = degree.DegreeID LEFT JOIN student_advisors sa ON sa.Student_ID = users.External_ID WHERE users.Role = 'Student'");
+        return $this->conn->query("SELECT users.User_ID AS Student_ID, users.External_ID AS StuExternal_ID, users.First_name, users.Last_Name, users.Uni_Email AS Email, users.Department_ID AS Degree_ID, users.Year, degree.DegreeName AS Degree, sa.Advisor_ID FROM users JOIN degree ON users.Department_ID = degree.DegreeID LEFT JOIN student_advisors sa ON sa.Student_ID = users.External_ID WHERE users.Role = 'Student'");
     }
 
     public function getSuperUsers(){
@@ -369,7 +369,7 @@ class Admin extends Users
         return $password;
     }
 
-
+    //function to generate ExtrenalId for superuser bcs its unique
     private function getNextExternalId(): int
     {
         $result = $this->conn->query('SELECT COALESCE(MAX(External_ID), 0) + 1 AS next_external_id FROM users');
@@ -380,7 +380,8 @@ class Admin extends Users
         return random_int(100000, 999999);
     }
 
-        public function editAdvisor(?string $externalId, string $first, string $last, string $email, string $phone, int $department): bool {
+    //Edit advisor using the advisor id to find the advisor and update the info with the new one provided.
+    public function editAdvisor(?string $externalId, string $first, string $last, string $email, string $phone, int $department): bool {
           if ($first === '' || $last === '' || $email === '' || $department === '') {
             return false;
         }
@@ -416,6 +417,57 @@ class Admin extends Users
 
         $stmt = $this->conn->prepare('UPDATE users SET Uni_Email = ?, First_name = ?, Last_Name = ?, Phone = ?, Department_ID = ? WHERE User_ID = ? AND Role = "Advisor"');
         $stmt->bind_param('ssssii', $email, $first, $last, $phone, $department, $Userid);
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    //Edit students using the sudent id to find the student and update the info with the new one provided.
+    public function editStudent(?string $externalid, string $first, string $last, string $email, int $degree, string $year, ?int $advisorID = null): bool {
+    
+        //check if first name, last name, email and year are not empty
+        if ($first === '' || $last === '' || $email === '' || $year === '') {
+            return false;
+        }
+
+        //check if email is valid
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        //check if external id is valid
+        if ($externalid === null || trim($externalid) === '' || (int)$externalid <= 0) {
+            return false;
+        }
+
+        $externalIdInt = (int)$externalid;
+
+        //get the id of the student to update
+        $getid = $this->conn->prepare('SELECT User_ID FROM users WHERE External_ID = ? AND Role = "Student" LIMIT 1');
+        $getid->bind_param('i', $externalIdInt);
+        $getid->execute();
+        $getidResult = $getid->get_result();
+        if (!$getidResult || $getidResult->num_rows === 0) {
+            return false;
+        }
+
+        //get the userid to update the student info
+        $Userid = (int)$getidResult->fetch_assoc()['User_ID'];
+
+        // Prevent collision with another student's email.
+        $check = $this->conn->prepare('SELECT User_ID FROM users WHERE Uni_Email = ? AND User_ID <> ? LIMIT 1');
+        $check->bind_param('si', $email, $Userid);
+        $check->execute();
+        $Result = $check->get_result();
+        if ($Result && $Result->num_rows > 0) {
+            return false;
+        }
+
+        //update the student query
+        $stmt = $this->conn->prepare('UPDATE users SET Uni_Email = ?, First_name = ?, Last_Name = ?, Year = ?, Department_ID = ? WHERE User_ID = ? AND Role = "Student"');
+        $stmt->bind_param('ssssii', $email, $first, $last, $year, $degree, $Userid);
         if (!$stmt->execute()) {
             return false;
         }
