@@ -1,15 +1,38 @@
 <?php
 /* 
 NAME: Student Book Appointment Page
-Description: Allows a student to select an available office hour slot and submit an appointment request (Pending).
+Description: Allows a student to select an available weekly office hour slot and submit an appointment request (Pending).
 Author: Panteleimoni Alexandrou
-Date: 28/02/2026 v0.1
-Inputs: 
-- GET: slot_id
+Date: 20/03/2026 v1.2
+
+Inputs:
+- GET or POST: slot_id
 - POST: reason
-Outputs: HTML booking form + confirmation message
-Error Messages: Shows validation and database errors if something fails
-Files in use: backend/config/db.php, Bootstrap CSS from the web
+
+Outputs:
+- HTML booking form
+- Success confirmation message
+
+Error Messages:
+- Student not found
+- No advisor assigned
+- Invalid slot
+- Reason is required
+- Appointment already exists for this slot
+- Database/query error if something fails
+
+Files in use:
+- backend/config/db.php
+- users table
+- student_advisors table
+- office_hours table
+- appointment_history table
+- Bootstrap CSS from the web
+
+Notes:
+- TEMP: student is hardcoded for testing.
+- Later this must come from session/login through User Management.
+- Booking is inserted as Pending (Status = 0).
 */
 
 declare(strict_types=1);
@@ -19,62 +42,152 @@ require_once __DIR__ . '/../config/db.php';
 $errorMessage = "";
 $successMessage = "";
 
-// TEMP: hardcoded student for testing. Later this must come from session/login.
-$studentId = 27407;
+/*
+------------------------------------------------------------
+TEMP TEST DATA
+------------------------------------------------------------
+*/
+$studentExternalId = 27407;
 
-// Get slot_id from URL
-$slotId = isset($_GET['slot_id']) ? (int)$_GET['slot_id'] : 0;
+/*
+------------------------------------------------------------
+GET STUDENT USER_ID
+------------------------------------------------------------
+*/
+$studentId = 0;
+$advisorExternalId = 0;
+$advisorId = 0;
+
+try {
+    $sql = "SELECT User_ID
+            FROM users
+            WHERE External_ID = :ext
+              AND Role = 'Student'
+            LIMIT 1";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['ext' => $studentExternalId]);
+    $student = $stmt->fetch();
+
+    if (!$student) {
+        throw new Exception("Student not found.");
+    }
+
+    $studentId = (int)$student['User_ID'];
+
+    $sql = "SELECT Advisor_ID
+            FROM student_advisors
+            WHERE Student_ID = :sid
+            LIMIT 1";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['sid' => $studentExternalId]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        throw new Exception("No advisor assigned.");
+    }
+
+    $advisorExternalId = (int)$row['Advisor_ID'];
+
+    $sql = "SELECT User_ID
+            FROM users
+            WHERE External_ID = :ext
+              AND Role = 'Advisor'
+            LIMIT 1";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(['ext' => $advisorExternalId]);
+    $advisor = $stmt->fetch();
+
+    if (!$advisor) {
+        throw new Exception("Advisor user not found.");
+    }
+
+    $advisorId = (int)$advisor['User_ID'];
+
+} catch (Throwable $e) {
+    $errorMessage = $e->getMessage();
+}
+
+/*
+------------------------------------------------------------
+GET SLOT
+Accept slot_id from GET or POST
+------------------------------------------------------------
+*/
+$slotId = 0;
+
+if (isset($_POST['slot_id'])) {
+    $slotId = (int)$_POST['slot_id'];
+} elseif (isset($_GET['slot_id'])) {
+    $slotId = (int)$_GET['slot_id'];
+}
+
 $slot = null;
 
-// 1) Load slot details
-if ($slotId > 0) {
+if ($slotId > 0 && $errorMessage === "") {
     try {
         $sql = "SELECT OfficeHour_ID, Advisor_ID, Day_of_Week, Start_Time, End_Time
                 FROM office_hours
-                WHERE OfficeHour_ID = :slot_id";
+                WHERE OfficeHour_ID = :id
+                  AND Advisor_ID = :advisor";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute(['slot_id' => $slotId]);
+        $stmt->execute([
+            'id' => $slotId,
+            'advisor' => $advisorId
+        ]);
         $slot = $stmt->fetch();
 
         if (!$slot) {
-            $errorMessage = "Selected slot was not found.";
+            $errorMessage = "Invalid slot.";
         }
+
     } catch (Throwable $e) {
         $errorMessage = $e->getMessage();
     }
-} else {
-    $errorMessage = "Invalid slot selection.";
 }
 
-// 2) Handle POST (create appointment request)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $slot) {
+/*
+------------------------------------------------------------
+HANDLE BOOKING
+------------------------------------------------------------
+*/
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reason']) && $slot && $errorMessage === "") {
     $reason = trim($_POST['reason'] ?? '');
 
     if ($reason === '') {
-        $errorMessage = "Reason field is required.";
+        $errorMessage = "Reason is required.";
     } else {
         try {
-            // Create an Appointment_Date using the next occurrence of the slot day (simple approach)
-            // For now we store "today + start time" as a placeholder. Later we can calculate correct date per weekday.
             $appointmentDate = date('Y-m-d') . ' ' . $slot['Start_Time'];
 
-            $sql = "INSERT INTO appointment_history 
-                    (Student_ID, Advisor_ID, OfficeHour_ID, Reason, Appointment_Date, Status, Attendance)
-                    VALUES (:student_id, :advisor_id, :officehour_id, :reason, :appointment_date, :status, :attendance)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
-                'student_id' => $studentId,
-                'advisor_id' => (int)$slot['Advisor_ID'],
-                'officehour_id' => (int)$slot['OfficeHour_ID'],
-                'reason' => $reason,
-                'appointment_date' => $appointmentDate,
-                'status' => 0,      // 0 = Pending
-                'attendance' => 0   // 0 = Not attended yet
+            $checkSql = "SELECT Appointment_ID
+                         FROM appointment_history
+                         WHERE OfficeHour_ID = :officehour_id
+                           AND Status IN (0, 1)
+                         LIMIT 1";
+            $checkStmt = $pdo->prepare($checkSql);
+            $checkStmt->execute([
+                'officehour_id' => $slotId
             ]);
 
-            // Redirect to avoid duplicate insert on refresh
-            header("Location: StudentBookAppointment.php?slot_id=" . $slotId . "&msg=success");
-            exit;
+            if ($checkStmt->fetch()) {
+                $errorMessage = "This slot is no longer available.";
+            } else {
+                $sql = "INSERT INTO appointment_history
+                        (Student_ID, Advisor_ID, OfficeHour_ID, Reason, Appointment_Date, Status, Attendance)
+                        VALUES (:sid, :aid, :officehour_id, :reason, :date, 0, 0)";
+
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([
+                    'sid' => $studentId,
+                    'aid' => $advisorId,
+                    'officehour_id' => $slotId,
+                    'reason' => $reason,
+                    'date' => $appointmentDate
+                ]);
+
+                header("Location: StudentBookAppointment.php?slot_id=$slotId&success=1");
+                exit;
+            }
 
         } catch (Throwable $e) {
             $errorMessage = $e->getMessage();
@@ -82,9 +195,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $slot) {
     }
 }
 
-// 3) Success message after redirect
-if (isset($_GET['msg']) && $_GET['msg'] === 'success') {
-    $successMessage = "Appointment request submitted successfully (Pending).";
+/*
+------------------------------------------------------------
+SUCCESS MESSAGE
+------------------------------------------------------------
+*/
+if (isset($_GET['success'])) {
+    $successMessage = "Appointment booked successfully and is now pending.";
 }
 ?>
 
@@ -92,52 +209,48 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'success') {
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>AdviCut - Book Appointment</title>
+    <title>Book Appointment</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-light">
-    <div class="container d-flex justify-content-center align-items-center vh-100">
-        <div class="card shadow p-4" style="width:700px;">
-            <h3 class="text-center mb-4">Book Appointment</h3>
 
-            <?php if ($errorMessage !== ""): ?>
-                <div class="alert alert-danger text-center">
-                    Error: <?= htmlspecialchars($errorMessage) ?>
-                </div>
-            <?php endif; ?>
+<div class="container d-flex justify-content-center align-items-center vh-100">
+    <div class="card shadow p-4" style="width:700px;">
 
-            <?php if ($successMessage !== ""): ?>
-                <div class="alert alert-success text-center">
-                    <?= htmlspecialchars($successMessage) ?>
-                </div>
-            <?php endif; ?>
+        <h3 class="text-center mb-4">Book Appointment</h3>
 
-            <?php if ($slot): ?>
-                <div class="mb-3">
-                    <p class="mb-1"><strong>Selected Slot:</strong></p>
-                    <ul class="list-group">
-                        <li class="list-group-item">Slot ID: <?= htmlspecialchars((string)$slot['OfficeHour_ID']) ?></li>
-                        <li class="list-group-item">Advisor ID: <?= htmlspecialchars((string)$slot['Advisor_ID']) ?></li>
-                        <li class="list-group-item">Day: <?= htmlspecialchars((string)$slot['Day_of_Week']) ?></li>
-                        <li class="list-group-item">Time: <?= htmlspecialchars((string)$slot['Start_Time']) ?> - <?= htmlspecialchars((string)$slot['End_Time']) ?></li>
-                    </ul>
-                </div>
-
-                <form method="POST">
-                    <div class="mb-3">
-                        <label class="form-label">Reason / Description</label>
-                        <textarea name="reason" class="form-control" rows="4" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Confirm Booking Request</button>
-                </form>
-            <?php endif; ?>
-
-            <div class="mt-3 text-center">
-                <a href="StudentAvailableSlots.php" class="btn btn-secondary">Back to Slots</a>
+        <?php if ($errorMessage): ?>
+            <div class="alert alert-danger text-center">
+                <?= htmlspecialchars($errorMessage) ?>
             </div>
+        <?php endif; ?>
+
+        <?php if ($successMessage): ?>
+            <div class="alert alert-success text-center">
+                <?= htmlspecialchars($successMessage) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($slot): ?>
+            <div class="mb-3">
+                <strong>Day:</strong> <?= htmlspecialchars($slot['Day_of_Week']) ?><br>
+                <strong>Time:</strong> <?= htmlspecialchars($slot['Start_Time']) ?> - <?= htmlspecialchars($slot['End_Time']) ?>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="slot_id" value="<?= (int)$slot['OfficeHour_ID'] ?>">
+                <textarea name="reason" class="form-control mb-3" placeholder="Reason..." required></textarea>
+                <button class="btn btn-primary w-100">Confirm Booking</button>
+            </form>
+        <?php endif; ?>
+
+        <div class="mt-3 text-center">
+            <a href="StudentAvailableSlots.php" class="btn btn-secondary">Back</a>
         </div>
+
     </div>
+</div>
+
 </body>
 </html>
