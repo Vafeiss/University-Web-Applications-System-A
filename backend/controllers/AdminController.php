@@ -19,6 +19,14 @@
   Added error handling and success messages for all functions using the notifications class added new function to normalize the year input for csv
   and phone number validation for the add/edit advisor functions
   Paraskevas Vafeiadis
+
+  21=Mar-2026 v0.5
+  Added edit || add functionality for students && advisors && degrees. Also added error handling for the edit functions.
+  Paraskevas Vafeiadis
+
+  22-Mar-2026 v0.6
+  Added add/edit/delete degree functionality and routes as well as error handling
+  Paraskevas Vafeiadis
 */
 
 declare(strict_types=1);
@@ -405,7 +413,7 @@ class AdminController {
             $degree = 1;
         }
 
-        $year = $this->normalizeYear((string)($_POST['year'] ?? ''));
+        $year = trim((string)($_POST['year'] ?? ''));
         $advisorInput = $_POST['advisor_id'] ?? ($_POST['advisors_id'] ?? '');
         $advisorID = ($advisorInput === '' ? null : (int)$advisorInput);
 
@@ -421,5 +429,102 @@ class AdminController {
         exit();
     }
 
+    public function editDegreeController(){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        $degreeId = (int)($_POST['degree_id'] ?? 0);
+        $degreeName = trim((string)($_POST['degree_name'] ?? ''));
+        $departmentName = trim((string)($_POST['department_name'] ?? ''));
+
+        if ($degreeId <= 0 || $degreeName === '' || $departmentName === '') {
+            Notifications::error("Invalid degree data.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+        try{
+        $saved = $this->admin->editDegree($degreeId, $degreeName, $departmentName);
+        if (!$saved) {
+            Notifications::error("Failed to edit degree.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+        Notifications::success("Degree edited successfully.");
+        header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+        exit();
+        } catch (Exception $e) {
+            Notifications::error("An error occurred while editing the degree: " . $e->getMessage());
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
     
+    }
+
+    public function addDegreeController(){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        $degreeName = trim((string)($_POST['degree_name'] ?? ''));
+        $departmentName = trim((string)($_POST['department_name'] ?? ''));
+
+        if ($degreeName === '' || $departmentName === '') {
+            Notifications::error("Degree name and department name cannot be empty.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+        try{
+        $added = $this->admin->addDegree($degreeName, $departmentName);
+        if (!$added) {
+            Notifications::error("Failed to add degree.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+        Notifications::success("Degree added successfully.");
+        header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+        exit();
+        } catch (Exception $e) {
+            Notifications::error("An error occurred while adding the degree: " . $e->getMessage());
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+    }
+
+    public function deleteDegreeController(){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        $degreeId = (int)($_POST['degree_id'] ?? 0);
+
+        if ($degreeId <= 0) {
+            Notifications::error("Invalid degree ID.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+        try{
+        $deleted = $this->admin->deleteDegree($degreeId);
+        if (!$deleted) {
+            Notifications::error("Failed to delete degree.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+        Notifications::success("Degree deleted successfully.");
+        header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+        exit();
+        } catch (Exception $e) {
+            Notifications::error("An error occurred while deleting the degree: " . $e->getMessage());
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+    }
+
 }

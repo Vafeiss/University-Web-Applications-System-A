@@ -15,3 +15,6 @@ $router->post('/superuser/add', ['AdminController','addSuperUser']);
 $router->post('/superuser/delete', ['AdminController','deleteSuperUser']);
 $router->post('/advisor/students/assign', ['AdminController','assignStudentsToAdvisor']);
 $router->post('/advisor/students/random', ['AdminController','randomAssignment']);
+$router->post('/degree/add', ['AdminController','addDegreeController']);
+$router->post('/degree/delete', ['AdminController','deleteDegreeController']);
+$router->post('/degree/edit', ['AdminController','editDegreeController']);

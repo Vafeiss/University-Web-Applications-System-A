@@ -8,8 +8,13 @@ Outputs: None
 Error Messages : if connection fails throw exception with message
 Files in use: UsersClass.php where the connection is used to query the database for log in
 */
+
 declare(strict_types=1);
 
+function ConnectToDatabase(): PDO {
+static $conn = null;
+
+if($conn === null) {
 $host = "127.0.0.1";
 $db   = "advicut";
 $user = "root";
@@ -23,5 +28,8 @@ PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, //exception handling thr
 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, //fetches data as the name not numbers 0,1 etc.
 ];
 
-$pdo = new PDO($dsn, $user, $pass, $options);
+$conn = new PDO($dsn, $user, $pass, $options);
+}
+return $conn;
+}
 ?>

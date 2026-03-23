@@ -36,6 +36,10 @@
   added is validphonenumber function and used to for add/edit advisor and also some error handling for it in the admincontroller.
   Paraskevas Vafeiadis
 
+  22-Mar-2026 v0.8
+  fixed some bugs in edit student and added some error handling. Added new functions to add/edit/delete degree and also added the routes for them.
+  Paraskevas Vafeiadis
+
 */
 require_once __DIR__ . '/UsersClass.php';
 
@@ -73,6 +77,9 @@ class Admin extends Users
             '5' => '5',
             'year 5' => '5',
             'fifth' => '5',
+            '6' => '6',
+            'year 6' => '6',
+            'sixth' => '6',
         ];
 
         return $map[$value] ?? '';
@@ -155,6 +162,7 @@ class Admin extends Users
 
     }
 
+    //get students based on the degree they are in
      public function getStudentsByDegree(int $degree){
 
         $stmt = $this->conn->prepare(
@@ -201,6 +209,9 @@ class Admin extends Users
         if ($first === '' || $last === '' || $email === '' || $department === '') {
             return false;
         }
+
+        $first = ucfirst(strtolower($first));
+        $last = ucfirst(strtolower($last));
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
@@ -249,6 +260,9 @@ class Admin extends Users
         if ($first === '' || $last === '' || $email === '' || $year === '') {
             return false;
         }
+
+        $first = ucfirst(strtolower($first));
+        $last = ucfirst(strtolower($last));
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
@@ -597,6 +611,18 @@ class Admin extends Users
             return false;
         }
 
+        $normalizedYear = $this->normalizeYear($year);
+        if ($normalizedYear === '') {
+            return false;
+        }
+
+        if ($degree <= 0) {
+            $degree = 1;
+        }
+
+        $first = ucfirst(strtolower($first));
+        $last = ucfirst(strtolower($last));
+
         $externalIdInt = (int)$externalid;
 
         //get the id of the student to update
@@ -620,16 +646,138 @@ class Admin extends Users
             return false;
         }
 
-        //update the student query
-        $stmt = $this->conn->prepare('UPDATE users SET Uni_Email = ?, First_name = ?, Last_Name = ?, Year = ?, Department_ID = ? WHERE User_ID = ? AND Role = "Student"');
-        $stmt->bind_param('ssssii', $email, $first, $last, $year, $degree, $Userid);
-        if (!$stmt->execute()) {
+        $this->conn->begin_transaction();
+
+        try {
+            // update basic student user fields
+            $stmt = $this->conn->prepare('UPDATE users SET Uni_Email = ?, First_name = ?, Last_Name = ?, Department_ID = ? WHERE User_ID = ? AND Role = "Student"');
+            if ($stmt === false) {
+                throw new RuntimeException('Failed to prepare student update statement.');
+            }
+            $stmt->bind_param('sssii', $email, $first, $last, $degree, $Userid);
+            if (!$stmt->execute()) {
+                throw new RuntimeException('Failed to update student user record.');
+            }
+
+            // update student-specific data
+            $yearStmt = $this->conn->prepare('UPDATE students SET Year = ? WHERE User_ID = ?');
+            if ($yearStmt === false) {
+                throw new RuntimeException('Failed to prepare student year update statement.');
+            }
+            $yearStmt->bind_param('ii', $normalizedYear, $Userid);
+            if (!$yearStmt->execute()) {
+                throw new RuntimeException('Failed to update student year.');
+            }
+
+            if ($advisorID !== null && $advisorID > 0) {
+                $advisorCheck = $this->conn->prepare('SELECT External_ID FROM users WHERE External_ID = ? AND Role = "Advisor" LIMIT 1');
+                if ($advisorCheck === false) {
+                    throw new RuntimeException('Failed to prepare advisor lookup statement.');
+                }
+
+                $advisorCheck->bind_param('i', $advisorID);
+                if (!$advisorCheck->execute()) {
+                    throw new RuntimeException('Failed to validate advisor record.');
+                }
+
+                $advisorResult = $advisorCheck->get_result();
+                if ($advisorResult && $advisorResult->num_rows > 0) {
+                    $linkStmt = $this->conn->prepare('INSERT INTO student_advisors (Student_ID, Advisor_ID) VALUES (?, ?) ON DUPLICATE KEY UPDATE Advisor_ID = VALUES(Advisor_ID)');
+                    if ($linkStmt === false) {
+                        throw new RuntimeException('Failed to prepare advisor link statement.');
+                    }
+
+                    $linkStmt->bind_param('ii', $externalIdInt, $advisorID);
+                    if (!$linkStmt->execute()) {
+                        throw new RuntimeException('Failed to update student advisor link.');
+                    }
+                }
+            } else {
+                // remove advisor link when set to no advisor
+                $unlinkStmt = $this->conn->prepare('DELETE FROM student_advisors WHERE Student_ID = ?');
+                if ($unlinkStmt === false) {
+                    throw new RuntimeException('Failed to prepare advisor unlink statement.');
+                }
+                $unlinkStmt->bind_param('i', $externalIdInt);
+                if (!$unlinkStmt->execute()) {
+                    throw new RuntimeException('Failed to remove student advisor link.');
+                }
+            }
+
+            $this->conn->commit();
+            return true;
+        } catch (Throwable $exception) {
+            $this->conn->rollback();
+            return false;
+        }
+    }
+
+
+    //function to be able to edit any degree / department inside the database
+    public function editDegree(int $degreeId, string $degreeName, string $departmentName): bool {
+
+        if ($degreeName === '' || $departmentName === '' || $degreeId <= 0) {
             return false;
         }
 
-        return true;
+        try{
+            $DegreeName = ucfirst(strtolower($degreeName));
+            $DepartmentName = ucfirst(strtolower($departmentName));
+            $stmt = $this->conn->prepare('UPDATE degree SET Department_Name = ?, DegreeName = ? WHERE DegreeID = ?');
+            $stmt->bind_param('ssi', $DepartmentName, $DegreeName, $degreeId);
+            $stmt->execute();
+            if($stmt->affected_rows === 0) {
+                return false;
+            }
+            return true;
+
+        } catch (Exception $e) {
+            return false;
+        }
     }
 
-    
+    //function to be able to add any degree/department inside the database
+    public function addDegree(string $degreeName, string $departmentName): bool {
+
+        if ($degreeName === '' || $departmentName === '') {
+            return false;
+        }
+
+        try{
+            $DegreeName = ucfirst(strtolower($degreeName));
+            $DepartmentName = ucfirst(strtolower($departmentName));
+            $stmt = $this->conn->prepare('INSERT INTO degree (Department_Name, DegreeName) VALUES (?, ?)');
+            $stmt->bind_param('ss', $DepartmentName, $DegreeName);
+            $stmt->execute();
+            if($stmt->affected_rows === 0) {
+                return false;
+            }
+            return true;
+
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function deleteDegree(int $degreeId): bool {
+
+        if ($degreeId <= 0) {
+            return false;
+        }
+
+        try{
+            $stmt = $this->conn->prepare('DELETE FROM degree WHERE DegreeID = ?');
+            $stmt->bind_param('i', $degreeId);
+            $stmt->execute();
+            if($stmt->affected_rows === 0) {
+                return false;
+            }
+            return true;
+
+        } catch (Exception $e) {
+            return false;
+        }
+
+    }
 
 }

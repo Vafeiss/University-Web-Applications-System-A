@@ -25,6 +25,7 @@ require_once 'init.php';
 require_once '../backend/modules/AdminClass.php';
 require_once '../backend/modules/ParticipantsClass.php';
 require_once '../backend/modules/NotificationsClass.php';
+require_once '../backend/modules/SelectionClass.php';
 
 $user = new Admin();
 $user->Check_Session('Admin');
@@ -35,6 +36,20 @@ $activeTab = $_GET['tab'] ?? 'advisors';
 $advisors = $user->getAdvisors();
 $selectedStudentsYear =  trim((string)($_GET['student_year'] ?? ''));
 $selectedStudentsDegree = (int)($_GET['Student_Degree'] ?? '');
+
+$selectionClass = new SelectionClass();
+$degrees = $selectionClass->getDegrees();
+
+$DegreeOptions = [];
+if (is_array($degrees)) {
+  foreach ($degrees as $degree) {
+    $degreeId = (string)($degree['DegreeID'] ?? '');
+    $degreeName = (string)($degree['DegreeName'] ?? '');
+    if ($degreeId !== '' && $degreeName !== '') {
+      $DegreeOptions[$degreeId] = $degreeName;
+    }
+  }
+}
 
 if($selectedStudentsYear !== '' && $selectedStudentsDegree !== 0){
   $students = $user->FilterStudents($selectedStudentsDegree, $selectedStudentsYear);
@@ -102,12 +117,8 @@ $YearOptions = [
   '3' => 'Year 3',
   '4' => 'Year 4',
   '5' => 'Year 5',
+  '6' => 'Year 6',
 ];
-
-$DegreeOptions = [
-  '1' => 'Computer Engineer & Informatics',
-  '2' => 'Electrical Engineering',
-]
 
 ?>
 <!DOCTYPE html>
@@ -118,6 +129,8 @@ $DegreeOptions = [
   <title>Administrator Portal</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/degreebuttons.css">
+
   <style>
     body { background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif; }
 
@@ -167,23 +180,66 @@ $DegreeOptions = [
 
     /*flash toast css*/
     .flash-toast { position: fixed; top: 1rem; right: 1rem; z-index: 9999; min-width: 280px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,.12); padding: .85rem 1.1rem; display: flex; align-items: center; gap: .6rem; font-size: .92rem; }
+
+        /* degrees big buttons */
+    .deg-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 700px; margin: 60px auto; }
+    .deg-btn { background: #fff; border: 2px solid #e5e7eb; border-radius: 20px; padding: 48px 28px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; text-decoration: none; color: #111827; transition: all .22s cubic-bezier(.34,1.4,.64,1); gap: 18px; }
+    .deg-btn:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(0,0,0,.1); color: #111827; text-decoration: none; }
+    .deg-btn.add:hover { border-color: #4f46e5; }
+    .deg-btn.edit:hover { border-color: #059669; }
+    .deg-btn .deg-icon { width: 76px; height: 76px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; transition: all .22s cubic-bezier(.34,1.4,.64,1); }
+    .deg-btn.add  .deg-icon { background: #ede9fe; color: #4f46e5; }
+    .deg-btn.edit .deg-icon { background: #d1fae5; color: #059669; }
+    .deg-btn.add:hover  .deg-icon { background: #4f46e5; color: #fff; transform: scale(1.08) rotate(-4deg); }
+    .deg-btn.edit:hover .deg-icon { background: #059669; color: #fff; transform: scale(1.08) rotate(4deg); }
+    .deg-btn h5 { font-weight: 700; font-size: 1.15rem; margin: 0 0 4px; }
+    .deg-btn p  { font-size: .84rem; color: #6b7280; margin: 0; line-height: 1.5; }
+    @media(max-width:560px){ .deg-btn-row{ grid-template-columns: 1fr; } }
+ 
+    /* degrees edit list */
+    .deg-list-item { background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; transition: border-color .15s; }
+    .deg-list-item:hover { border-color: #d1d5db; }
+    .deg-list-item.editing { border-color: #4f46e5; background: #fafbff; }
+    .deg-inline-form { display: none; flex-direction: column; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+    .deg-list-item.editing .deg-inline-form { display: flex; }
+
+    .welcome-text {
+    font-weight: 750;
+    font-size: 28px;
+    color: #555;
+    }
+
+    .logo {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
+    }
+
   </style>
 </head>
 <body>
 
 <?php if ($flash): ?>
 <div class="flash-toast alert alert-<?= $flashType === 'error' ? 'danger' : 'success' ?> mb-0" id="flashToast">
-  <i class="bi bi-<?= $flashType === 'error' ? 'x-circle' : 'check-circle' ?>-fill"></i>
-  <?= htmlspecialchars($flash) ?>
+  <span class="flash-content">
+    <i class="bi bi-<?= $flashType === 'error' ? 'x-circle' : 'check-circle' ?>-fill"></i>
+    <?= htmlspecialchars($flash) ?>
+  </span>
 </div>
-<script>setTimeout(() => document.getElementById('flashToast')?.remove(), 3500);</script>
+<script>
+  setTimeout(() => document.getElementById('flashToast')?.remove(), 3500);
+</script>
 <?php endif; ?>
 
 
 <!-- navigation bar -->
 <header class="top-navbar">
 
-  <span class="brand-badge">ADMIN</span>
+  <img src="../documents/tepaklogo.png" alt="Logo" class="logo">
+
+  <div class="navbar-center">
+    <span class="welcome-text">Welcome To Advicut!👋</span>
+  </div>
 
   <div class="d-flex align-items-center gap-3">
     <i class="bi bi-question-circle text-secondary fs-5" title="Help"></i>
@@ -208,13 +264,16 @@ $DegreeOptions = [
     <i class="bi bi-people"></i> Students
   </button>
   <button class="tab-btn <?= $activeSection === 'superusers'    ? 'active' : '' ?>" data-section="superusers">
-    <i class="bi bi-shield-lock"></i> SuperUsers
+    <i class="bi bi-shield-lock"></i> Admins
   </button>
   <button class="tab-btn <?= $activeSection === 'assignstudents'? 'active' : '' ?>" data-section="assignstudents">
     <i class="bi bi-diagram-3"></i> Assignments
   </button>
   <button class="tab-btn <?= $activeSection === 'statistics'    ? 'active' : '' ?>" data-section="statistics">
     <i class="bi bi-bar-chart-line"></i> Statistics
+  </button>
+  <button class="tab-btn <?= $activeSection === 'degrees'    ? 'active' : '' ?>" data-section="degrees">
+    <i class="bi bi-graduation-cap"></i> Degrees
   </button>
 </div>
 
@@ -320,12 +379,10 @@ $DegreeOptions = [
       <!-- filters -->
       <button class="btn btn-outline-primary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#filterSection">
         <i class="bi bi-funnel"></i> Filters </button>
-   
-
         <div class="collapse" id="filterSection">
           <form method="GET" class="row g-2 align-items-end mb-3">
               <input type="hidden" name="tab" value="students">
-      
+
         <div class="col-sm-4 col-md-3">
           <label for="studentYearFilter" class="form-label mb-1">Filter By Year</label>
           <select class="form-select" id="studentYearFilter" name="student_year" onchange="this.form.submit()">
@@ -341,7 +398,7 @@ $DegreeOptions = [
         <div class="col-sm-4 col-md-3">
           <label for="studentDegreeFilter" class="form-label mb-1">Filter By Degree</label>
           <select class="form-select" id="studentDegreeFilter" name="Student_Degree" onchange="this.form.submit()">
-            <option value="" <?= $DegreeOptions === '' ? 'selected' : '' ?>>All Degrees</option>
+            <option value="" <?= $selectedStudentsDegree === 0 ? 'selected' : '' ?>>All Degrees</option>
             <?php foreach ($DegreeOptions as $degreeValue => $degreeLabel): ?>
             <option value="<?= htmlspecialchars($degreeValue) ?>" <?= (string)$selectedStudentsDegree === (string)$degreeValue ? 'selected' : '' ?>>
               <?= htmlspecialchars($degreeLabel) ?>
@@ -350,7 +407,7 @@ $DegreeOptions = [
           </select>
         </div>
       </form>
-            </div>
+    </div>
   
 
       <input class="form-control mb-3" id="studentSearch" placeholder="Search students…">
@@ -393,7 +450,7 @@ $DegreeOptions = [
                 <td><?= htmlspecialchars($student['StuExternal_ID']) ?></td>
                 <td><?= htmlspecialchars($student['Email']) ?></td>
                 <td><?= htmlspecialchars($student['Degree']) ?></td>
-                <td><?= htmlspecialchars($student['Year'] ?? '') ?></td>
+                <td><?= 'Year ' . htmlspecialchars($student['Year'] ?? '') ?></td>
                 <td><?= htmlspecialchars($student['Advisor_ID'] ?? 'Unassigned') ?></td>
               </tr>
               <?php endwhile; ?>
@@ -423,15 +480,15 @@ $DegreeOptions = [
 
       <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-          <h5 class="mb-0 fw-semibold">SuperUsers</h5>
+          <h5 class="mb-0 fw-semibold">Admin Control</h5>
           <p class="text-muted mb-0" style="font-size:.85rem;">Manage elevated access accounts</p>
         </div>
         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSuperUserModal">
-          <i class="bi bi-shield-plus me-1"></i> Add SuperUser
+          <i class="bi bi-shield-plus me-1"></i> Add Admin
         </button>
       </div>
 
-      <input class="form-control mb-3" id="superuserSearch" placeholder="Search superusers…">
+      <input class="form-control mb-3" id="superuserSearch" placeholder="Search admins…">
 
       <form action="../backend/modules/dispatcher.php" method="POST" id="superuserForm">
         <input type="hidden" name="action" value="/superuser/delete">
@@ -556,7 +613,7 @@ $DegreeOptions = [
 
   <!-- Statistics tab -->
   <div class="section-panel <?= $activeSection === 'statistics' ? 'active' : '' ?>" id="section-statistics">
-
+ 
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-3">
         <div class="stat-card">
@@ -583,32 +640,102 @@ $DegreeOptions = [
         </div>
       </div>
     </div>
-
+ 
     <div class="section-card">
-      <h5 class="fw-semibold mb-4">Advisor Load</h5>
-      <?php foreach ($allAdvisors as $advisor):
-        $advisorExternalId = (int)$advisor['Advisor_ID'];
-        $count = 0;
-        if (isset($assignmentMap[$advisorExternalId]) && is_array($assignmentMap[$advisorExternalId])) {
-          $count = count($assignmentMap[$advisorExternalId]);
+ 
+      <!-- Build per-advisor per-year data from existing PHP variables -->
+      <?php
+        // Build a lookup: student external ID => year
+        $studentYearLookup = [];
+        foreach ($assignStudents as $stu) {
+          $studentYearLookup[(int)$stu['StuExternal_ID']] = (int)($stu['Year'] ?? 0);
         }
-        $pct = $totalStudents > 0 ? round(($count / $totalStudents) * 100) : 0;
-        $advisorName = htmlspecialchars($advisor['First_name'] . ' ' . $advisor['Last_Name']);
+ 
+        // Build chart data: per advisor, total + breakdown by year
+        $advisorChartData = [];
+        foreach ($allAdvisors as $advisor) {
+          $aid  = (int)$advisor['Advisor_ID'];
+          $name = $advisor['First_name'] . ' ' . $advisor['Last_Name'];
+          $byYear = [1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0];
+          if (isset($assignmentMap[$aid]) && is_array($assignmentMap[$aid])) {
+            foreach (array_keys($assignmentMap[$aid]) as $stuId) {
+              $yr = $studentYearLookup[(int)$stuId] ?? 0;
+              if ($yr >= 1 && $yr <= 6) $byYear[$yr]++;
+            }
+          }
+          $advisorChartData[] = [
+            'name'   => $name,
+            'total'  => array_sum($byYear),
+            'byYear' => $byYear,
+          ];
+        }
       ?>
-      <div class="mb-3">
-        <div class="d-flex justify-content-between mb-1">
-          <span style="font-size:.9rem;"><?= $advisorName ?></span>
-          <span class="text-muted" style="font-size:.85rem;"><?= $count ?> students (<?= $pct ?>%)</span>
-        </div>
-        <div class="progress" style="height:8px;border-radius:999px;">
-          <div class="progress-bar bg-primary" style="width:<?= $pct ?>%;border-radius:999px;"></div>
+ 
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <h5 class="fw-semibold mb-0">Advisor Statistics</h5>
+        <div class="d-flex gap-1 flex-wrap" id="yearFilterBtns">
+          <button class="btn btn-primary btn-sm year-filter-btn" data-year="0">All Years</button>
+          <?php for ($y = 1; $y <= 6; $y++): ?>
+            <button class="btn btn-outline-primary btn-sm year-filter-btn" data-year="<?= $y ?>">Year <?= $y ?></button>
+          <?php endfor; ?>
         </div>
       </div>
-      <?php endforeach; ?>
-
+ 
       <?php if (empty($allAdvisors)): ?>
         <p class="text-muted text-center py-4">No advisor data available.</p>
+      <?php else: ?>
+ 
+        <div class="row align-items-center g-4">
+          <!-- Pie chart -->
+          <div class="col-md-5 d-flex justify-content-center">
+            <div style="position:relative; width:100%; max-width:300px;">
+              <canvas id="advisorPieChart"></canvas>
+              <div id="chartCenterLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;">
+                <div style="font-size:1.6rem;font-weight:700;color:#111827;line-height:1;" id="chartCenterCount">0</div>
+                <div style="font-size:.75rem;color:#6b7280;">students</div>
+              </div>
+            </div>
+          </div>
+ 
+          <!-- Legend / breakdown table -->
+          <div class="col-md-7">
+            <div id="advisorLegend"></div>
+          </div>
+        </div>
+ 
+        <!-- Pass PHP data to JS -->
+        <script>
+          window.advisorChartData = <?= json_encode(array_values($advisorChartData), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        </script>
+ 
       <?php endif; ?>
+    </div>
+  </div>
+
+   
+  <!-- Degrees tab -->
+  <div class="section-panel <?= $activeSection === 'degrees' ? 'active' : '' ?>" id="section-degrees">
+ 
+    <div class="deg-btn-row">
+ 
+      <!-- ADD DEGREE -->
+      <a class="deg-btn add" href="#" data-bs-toggle="modal" data-bs-target="#addDegreeModal">
+        <div class="deg-icon"><i class="bi bi-plus-lg"></i></div>
+        <div>
+          <h5>Add Degree</h5>
+          <p>Create a new degree program into the database!</p>
+        </div>
+      </a>
+ 
+      <!-- EDIT DEGREE -->
+      <a class="deg-btn edit" href="#" data-bs-toggle="modal" data-bs-target="#editDegreeModal">
+        <div class="deg-icon"><i class="bi bi-pencil-square"></i></div>
+        <div>
+          <h5>Edit Degree</h5>
+          <p>Browse all existing degrees and update their details!</p>
+        </div>
+      </a>
+ 
     </div>
   </div>
 
@@ -651,7 +778,11 @@ $DegreeOptions = [
               <label class="form-label">Department <span class="text-danger">*</span></label>
               <select name="department" class="form-select" required>
                 <option value="" disabled selected>Select a department…</option>
-                <option value="1">HMMHY</option>
+                <?php foreach ($degrees as $degree): ?>
+                  <option value="<?= htmlspecialchars($degree['DegreeID']) ?>">
+                    <?= htmlspecialchars($degree['Department_Name']) ?>
+                  </option>
+                <?php endforeach; ?>
               </select>
             </div>
           </div>
@@ -745,6 +876,7 @@ $DegreeOptions = [
                 <option value="3">Year 3</option>
                 <option value="4">Year 4</option>
                 <option value="5">Year 5</option>
+                <option value="6">Year 6</option>
               </select>
             </div>
             <div class="col-6">
@@ -762,14 +894,18 @@ $DegreeOptions = [
             <div class="col-12">
               <label class="form-label">Degree <span class="text-danger">*</span></label>
               <select name="degree" id="editStudentDegree" class="form-select" required>
-                <option value="1">Computer Engineer & Informatics</option>
-                <option value="2">Electrical Engineering</option>
+                <option value="">Select a degree</option>
+                <?php foreach ($degrees as $degree): ?>
+                  <option value="<?= htmlspecialchars($degree['DegreeID']) ?>">
+                    <?= htmlspecialchars($degree['DegreeName']) ?>
+                  </option>
+                <?php endforeach; ?>
               </select>
             </div>
             <div class="col-12">
               <label class="form-label">Assign Advisor <span class="text-muted">(optional)</span></label>
               <select name="advisor_id" id="editStudentAdvisor" class="form-select">
-                <option value=" ">No advisor</option>
+                <option value="">No advisor</option>
                 <?php foreach ($allAdvisors as $adv): ?>
                 <option value="<?= htmlspecialchars($adv['Advisor_ID']) ?>">
                   <?= htmlspecialchars($adv['First_name'] . ' ' . $adv['Last_Name']) ?>
@@ -815,6 +951,7 @@ $DegreeOptions = [
                 <option value="3">Year 3</option>
                 <option value="4">Year 4</option>
                 <option value="5">Year 5</option>
+                <option value="6">Year 6</option>
               </select>
             </div>
             <div class="col-6">
@@ -833,14 +970,17 @@ $DegreeOptions = [
               <label class="form-label">Degree <span class="text-danger">*</span></label>
               <select name="degree" class="form-select" required>
                 <option value="" disabled selected>Select a degree…</option>
-                <option value="1">Computer Engineer & Informatics</option>
-                <option value="2">Electrical Engineering</option>
+                <?php foreach ($degrees as $degree): ?>
+                  <option value="<?= htmlspecialchars($degree['DegreeID']) ?>">
+                    <?= htmlspecialchars($degree['DegreeName']) ?>
+                  </option>
+                <?php endforeach; ?>
               </select>
             </div>
             <div class="col-12">
               <label class="form-label">Assign Advisor <span class="text-muted">(optional)</span></label>
               <select name="advisor_id" class="form-select">
-                <option value=" " selected>No advisor</option>
+                <option value="" selected>No advisor</option>
                 <?php foreach ($allAdvisors as $adv): ?>
                 <option value="<?= htmlspecialchars($adv['Advisor_ID']) ?>">
                   <?= htmlspecialchars($adv['First_name'] . ' ' . $adv['Last_Name']) ?>
@@ -923,6 +1063,131 @@ $DegreeOptions = [
 </div>
 
 
+
+<!-- ADD DEGREE MODAL -->
+<div class="modal fade" id="addDegreeModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-plus-circle-fill me-2 text-primary"></i>Add New Degree
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="../backend/modules/dispatcher.php" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="action" value="/degree/add">
+          <div class="row g-3">
+            <div class="col-8">
+              <label class="form-label">Degree Name <span class="text-danger">*</span></label>
+              <input type="text" name="degree_name" class="form-control" placeholder="e.g. BSc Computer Science" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Department <span class="text-danger">*</span></label>
+              <input type="text" name="department_name" class="form-control" placeholder="e.g. Computer Science" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2-circle me-1"></i> Save Degree
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+ 
+ 
+<!-- EDIT DEGREE MODAL -->
+<div class="modal fade" id="editDegreeModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-pencil-square me-2" style="color:#059669"></i>Edit Degrees
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+ 
+        <input class="form-control mb-3" id="degreeSearch" placeholder="Search degrees…">
+ 
+        <div id="degreeEditList">
+          <?php foreach ($degrees as $degree): ?>
+          <div class="deg-list-item" id="degItem-<?= htmlspecialchars($degree['DegreeID']) ?>">
+ 
+            <!-- Row header -->
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div style="flex:1;min-width:0">
+                <div class="fw-semibold" style="font-size:.95rem"><?= htmlspecialchars($degree['DegreeName']) ?></div>
+                <div class="text-muted" style="font-size:.78rem">
+                  <i class="bi bi-building" style="font-size:.7rem"></i>
+                  <?= htmlspecialchars($degree['Department_Name'] ?? '') ?>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="degToggleEdit('<?= htmlspecialchars($degree['DegreeID']) ?>')">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+                <form action="../backend/modules/dispatcher.php" method="POST" class="mb-0"
+                      onsubmit="return confirm('Delete this degree? This cannot be undone.')">
+                  <input type="hidden" name="action" value="/degree/delete">
+                  <input type="hidden" name="degree_id" value="<?= htmlspecialchars($degree['DegreeID']) ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+ 
+            <!-- Inline edit form -->
+            <div class="deg-inline-form" id="degForm-<?= htmlspecialchars($degree['DegreeID']) ?>">
+              <form action="../backend/modules/dispatcher.php" method="POST">
+                <input type="hidden" name="action" value="/degree/edit">
+                <input type="hidden" name="degree_id" value="<?= htmlspecialchars($degree['DegreeID']) ?>">
+                <div class="row g-2">
+                  <div class="col-8">
+                    <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280">Degree Name *</label>
+                    <input type="text" name="degree_name" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($degree['DegreeName']) ?>" required>
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280">Department *</label>
+                    <input type="text" name="department_name" class="form-control form-control-sm"
+                           value="<?= htmlspecialchars($degree['Department_Name'] ?? '') ?>" required>
+                  </div>                 
+                  <div class="col-12 d-flex gap-2 justify-content-end mt-1">
+                    <button type="button" class="btn btn-sm btn-light" onclick="degToggleEdit('<?= htmlspecialchars($degree['DegreeID']) ?>')">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success">
+                      <i class="bi bi-check2-circle me-1"></i>Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+ 
+          </div>
+          <?php endforeach; ?>
+          <?php if (empty($degrees)): ?>
+            <p class="text-muted text-center py-4">No degrees found in the database.</p>
+          <?php endif; ?>
+        </div>
+ 
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 
@@ -1118,6 +1383,167 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("filtersOpen", "false");
   });
 });
+
+
+// degree edit toggle
+function degToggleEdit(id) {
+  const item = document.getElementById('degItem-' + id);
+  const form = document.getElementById('degForm-' + id);
+  const isOpen = item.classList.contains('editing');
+  document.querySelectorAll('.deg-list-item.editing').forEach(el => {
+    el.classList.remove('editing');
+    el.querySelector('.deg-inline-form').style.display = 'none';
+  });
+  if (!isOpen) {
+    item.classList.add('editing');
+    form.style.display = 'flex';
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+ 
+// degree search
+const degreeSearchInput = document.getElementById('degreeSearch');
+if (degreeSearchInput) {
+  degreeSearchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('.deg-list-item').forEach(item => {
+      item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+// Advisor Pie Chart
+(function () {
+  const canvas  = document.getElementById('advisorPieChart');
+  if (!Array.isArray(window.advisorChartData) || !canvas) return;
+
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js failed to load. Advisor pie chart cannot render.');
+    return;
+  }
+ 
+  const COLORS = [
+    '#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444',
+    '#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1'
+  ];
+ 
+  const legend  = document.getElementById('advisorLegend');
+  const center  = document.getElementById('chartCenterCount');
+  const buttons = document.querySelectorAll('.year-filter-btn');
+ 
+  let currentYear = 0; // 0 = all
+  let chartInstance = null;
+ 
+  function getCounts(year) {
+    return window.advisorChartData.map(a =>
+      year === 0 ? a.total : (a.byYear[year] || 0)
+    );
+  }
+ 
+  function buildLegend(counts, total) {
+    if (!legend) return;
+    legend.innerHTML = '';
+
+    counts.forEach((c, i) => {
+      const a   = window.advisorChartData[i];
+      const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;';
+
+      const left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
+
+      const swatch = document.createElement('span');
+      swatch.style.cssText = `width:12px;height:12px;border-radius:3px;background:${COLORS[i % COLORS.length]};flex-shrink:0;display:inline-block;`;
+
+      const name = document.createElement('span');
+      name.style.cssText = 'font-size:.875rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      name.textContent = String(a?.name ?? '');
+
+      const right = document.createElement('span');
+      right.style.cssText = 'font-size:.82rem;color:#6b7280;white-space:nowrap;margin-left:12px;';
+      right.textContent = `${c} student${c !== 1 ? 's' : ''} (${pct}%)`;
+
+      left.appendChild(swatch);
+      left.appendChild(name);
+      row.appendChild(left);
+      row.appendChild(right);
+      legend.appendChild(row);
+    });
+  }
+ 
+  function renderChart(year) {
+    const counts = getCounts(year);
+    const total  = counts.reduce((s, v) => s + v, 0);
+    const labels = window.advisorChartData.map(a => a.name);
+    const colors = COLORS.slice(0, counts.length);
+ 
+    if (center) center.textContent = total;
+    buildLegend(counts, total);
+ 
+    // All-zero → show placeholder
+    const displayCounts = total === 0 ? [1] : counts;
+    const displayColors = total === 0 ? ['#e5e7eb'] : colors;
+    const displayLabels = total === 0 ? ['No data'] : labels;
+ 
+    if (chartInstance) {
+      chartInstance.data.labels             = displayLabels;
+      chartInstance.data.datasets[0].data   = displayCounts;
+      chartInstance.data.datasets[0].backgroundColor = displayColors;
+      chartInstance.update();
+      return;
+    }
+ 
+    chartInstance = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: displayLabels,
+        datasets: [{
+          data: displayCounts,
+          backgroundColor: displayColors,
+          borderWidth: 2,
+          borderColor: '#fff',
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                if (total === 0) return ' No students assigned';
+                const val = counts[ctx.dataIndex];
+                const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                return ` ${val} student${val !== 1 ? 's' : ''} (${pct}%)`;
+              }
+            }
+          }
+        },
+        animation: { animateRotate: true, duration: 500 }
+      }
+    });
+  }
+ 
+  // Init
+  renderChart(0);
+ 
+  // Year filter buttons
+  buttons.forEach(btn => {
+    btn.addEventListener('click', function () {
+      buttons.forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-outline-primary');
+      });
+      this.classList.remove('btn-outline-primary');
+      this.classList.add('btn-primary');
+      currentYear = parseInt(this.dataset.year, 10) || 0;
+      renderChart(currentYear);
+    });
+  });
+})();
 
 </script>
 

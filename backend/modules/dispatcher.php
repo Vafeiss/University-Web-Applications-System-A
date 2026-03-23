@@ -13,6 +13,7 @@ require_once __DIR__ . '/../core/router.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
 require_once __DIR__ . '/../controllers/UsersController.php';
 
+
 $router = new Router();
 
 require_once __DIR__ . '/../core/routes.php';
