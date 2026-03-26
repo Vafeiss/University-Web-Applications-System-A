@@ -27,6 +27,10 @@
   22-Mar-2026 v0.6
   Added add/edit/delete degree functionality and routes as well as error handling
   Paraskevas Vafeiadis
+
+  25-Mar-2026 v0.7
+  Added add/edit/delete department functionality and routes as well as error handling
+  Paraskevas Vafeiadis
 */
 
 declare(strict_types=1);
@@ -437,16 +441,16 @@ class AdminController {
 
         $degreeId = (int)($_POST['degree_id'] ?? 0);
         $degreeName = trim((string)($_POST['degree_name'] ?? ''));
-        $departmentName = trim((string)($_POST['department_name'] ?? ''));
+        $departmentid = (int)($_POST['department_id'] ?? 0);
 
-        if ($degreeId <= 0 || $degreeName === '' || $departmentName === '') {
+        if ($degreeId <= 0 || $departmentid <= 0 || $degreeName === '') {
             Notifications::error("Invalid degree data.");
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
             exit();
         }
 
         try{
-        $saved = $this->admin->editDegree($degreeId, $degreeName, $departmentName);
+        $saved = $this->admin->editDegree($degreeId, $degreeName , $departmentid);
         if (!$saved) {
             Notifications::error("Failed to edit degree.");
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
@@ -535,7 +539,7 @@ class AdminController {
 
         $degreeId = (int)($_POST['degree_id'] ?? 0);
 
-        if ($degreeId <= 0) {
+        if ($degreeId < 0) {
             Notifications::error("Invalid degree ID.");
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
             exit();
@@ -556,7 +560,69 @@ class AdminController {
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
             exit();
         }
+    }
 
+    public function deleteDepartmentController(){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        $departmentid = (int)($_POST['department_id'] ?? 0);
+
+        if ($departmentid <= 0) {
+            Notifications::error("Invalid department ID.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+        try{
+        $deleted = $this->admin->deleteDepartment($departmentid);
+        if (!$deleted) {
+            Notifications::error("Failed to delete department.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+        Notifications::success("Department deleted successfully.");
+        header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+        exit();
+        } catch (Exception $e) {
+            Notifications::error("An error occurred while deleting the department: " . $e->getMessage());
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+    }
+
+    public function editDepartmentController(){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ../../frontend/admin_dashboard.php');
+            exit();
+        }
+
+        $departmentId = (int)($_POST['department_id'] ?? 0);
+        $departmentName = trim((string)($_POST['department_name'] ?? ''));
+
+        if ($departmentName === '' || $departmentId <= 0) {
+            Notifications::error("Invalid department data.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+
+        try{
+        $saved = $this->admin->editDepartment($departmentId, $departmentName);
+        if (!$saved) {
+            Notifications::error("Failed to edit department.");
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
+        Notifications::success("Department edited successfully.");
+        header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+        exit();
+        } catch (Exception $e) {
+            Notifications::error("An error occurred while editing the department: " . $e->getMessage());
+            header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
+            exit();
+        }
     }
 
 }

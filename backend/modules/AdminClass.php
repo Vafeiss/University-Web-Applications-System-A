@@ -44,7 +44,13 @@
   Added department filtering , fixed some bugs because of the new database table
   Paraskevas Vafeiadis
 
+  25-Mar-2026 v1.0
+  Finished department editing/addition/deletion fully functional
+  Paraskevas Vafeiadis
+
 */
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 require_once __DIR__ . '/UsersClass.php';
 
 class Admin extends Users
@@ -763,26 +769,23 @@ class Admin extends Users
 
 
     //function to be able to edit any degree / department inside the database
-    public function editDegree(int $degreeId, string $degreeName, string $departmentName): bool {
+    public function editDegree(int $degreeId, string $degreeName, int $departmentId): bool {
 
-        if ($degreeName === '' || $departmentName === '' || $degreeId <= 0) {
+        if ($degreeName === '' || $degreeId <= 0 || $departmentId <= 0) {
             return false;
         }
-
+        
         try{
-            $DegreeName = ucfirst(strtolower($degreeName));
-            $DepartmentName = ucfirst(strtolower($departmentName));
-            $stmt = $this->conn->prepare('UPDATE degree SET Department_Name = ?, DegreeName = ? WHERE DegreeID = ?');
-            $stmt->bind_param('ssi', $DepartmentName, $DegreeName, $degreeId);
-            $stmt->execute();
-            if($stmt->affected_rows === 0) {
+            $stmt2 = $this->conn->prepare('UPDATE degree SET DegreeName = ?, DepartmentID = ? WHERE DegreeID = ?');
+            $stmt2->bind_param('ssi', $degreeName, $departmentId, $degreeId);
+            $stmt2->execute();
+            
+            $this->conn->commit();
+            return true;
+            } catch (Exception $e) {
+                $this->conn->rollback();
                 return false;
             }
-            return true;
-
-        } catch (Exception $e) {
-            return false;
-        }
     }
 
     //function to be able to add a department inside the database
@@ -815,7 +818,7 @@ class Admin extends Users
 
         try{
             $DegreeName = ucfirst(strtolower($degreeName));
-            $stmt = $this->conn->prepare('INSERT INTO degree (Department_ID, DegreeName) VALUES (?, ?)');
+            $stmt = $this->conn->prepare('INSERT INTO degree (DepartmentID, DegreeName) VALUES (?, ?)');
             $stmt->bind_param('is', $departmentId, $DegreeName);
             $stmt->execute();
             if($stmt->affected_rows === 0) {
@@ -830,7 +833,7 @@ class Admin extends Users
 
     public function deleteDegree(int $degreeId): bool {
 
-        if ($degreeId <= 0) {
+        if ($degreeId < 0) {
             return false;
         }
 
@@ -849,4 +852,41 @@ class Admin extends Users
 
     }
 
+    public function deleteDepartment(int $departmentId){
+
+        if ($departmentId <= 0) {
+            return false;
+        }
+
+        try{
+            $stmt = $this->conn->prepare('DELETE FROM departments WHERE DepartmentID = ?');
+            $stmt->bind_param('i', $departmentId);
+            $stmt->execute();
+            if($stmt->affected_rows === 0) {
+                return false;
+            }
+            return true;
+
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function editDepartment(int $departmentId , string $departmentName){
+        if($departmentId <= 0 || $departmentName === '') {
+            return false;
+        }
+
+        try{
+            $stmt2 = $this->conn->prepare('UPDATE departments SET DepartmentName = ? WHERE DepartmentID = ?');
+            $stmt2->bind_param('si', ucfirst(strtolower($departmentName)), $departmentId);
+            $stmt2->execute();
+            
+            $this->conn->commit();
+            return true;
+            } catch (Exception $e) {
+                $this->conn->rollback();
+                return false;
+            }
+        }
 }

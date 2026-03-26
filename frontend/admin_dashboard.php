@@ -29,6 +29,10 @@ Paraskevas Vafeiadis
 Added department filtering
 Paraskevas Vafeiadis
 
+25-Mar-2026 v0.7
+Department/Degree add/edit/delete fully functional
+Paraskevas Vafeiadis
+
 
 */
 
@@ -214,7 +218,7 @@ $YearOptions = [
     .flash-toast { position: fixed; top: 1rem; right: 1rem; z-index: 9999; min-width: 280px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,.12); padding: .85rem 1.1rem; display: flex; align-items: center; gap: .6rem; font-size: .92rem; }
 
         /* degrees big buttons */
-    .deg-btn-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 980px; margin: 60px auto; }
+    .deg-btn-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; max-width: 1000px; margin: 60px auto; }
     .deg-btn { background: #fff; border: 2px solid #e5e7eb; border-radius: 20px; padding: 48px 28px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; text-decoration: none; color: #111827; transition: all .22s cubic-bezier(.34,1.4,.64,1); gap: 18px; }
     .deg-btn:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(0,0,0,.1); color: #111827; text-decoration: none; }
     .deg-btn.add:hover { border-color: #4f46e5; }
@@ -799,6 +803,15 @@ $YearOptions = [
           <p>Create a new department and use it for future degrees.</p>
         </div>
       </a>
+
+      <!-- EDIT DEPARTMENT -->
+      <a class="deg-btn department" href="#" data-bs-toggle="modal" data-bs-target="#editDepartmentModal">
+        <div class="deg-icon"><i class="bi bi-pencil-square"></i></div>
+        <div>
+          <h5>Edit Department</h5>
+          <p>Browse all existing departments and update their details!</p>
+        </div>
+      </a>
  
     </div>
   </div>
@@ -1249,7 +1262,6 @@ $YearOptions = [
                 </form>
               </div>
             </div>
- 
             <!-- Inline edit form -->
             <div class="deg-inline-form" id="degForm-<?= htmlspecialchars($degree['DegreeID']) ?>">
               <form action="../backend/modules/dispatcher.php" method="POST">
@@ -1259,13 +1271,17 @@ $YearOptions = [
                   <div class="col-8">
                     <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280">Degree Name *</label>
                     <input type="text" name="degree_name" class="form-control form-control-sm"
-                           value="<?= htmlspecialchars($degree['DegreeName']) ?>" required>
+                          value="<?= htmlspecialchars($degree['DegreeName']) ?>" required>
                   </div>
                   <div class="col-12">
                     <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280">Department *</label>
-                    <input type="text" name="department_name" class="form-control form-control-sm"
-                           value="<?= htmlspecialchars($degree['Department_Name'] ?? '') ?>" required>
-                  </div>                 
+                    <select name="department_id" class="form-select form-select-sm" required>
+                    <?php foreach ($departments as $dep): ?>
+                      <option value="<?= $dep['DepartmentID'] ?>"<?= $dep['DepartmentID'] == $degree['DepartmentID'] ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($dep['DepartmentName']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                  </div>
                   <div class="col-12 d-flex gap-2 justify-content-end mt-1">
                     <button type="button" class="btn btn-sm btn-light" onclick="degToggleEdit('<?= htmlspecialchars($degree['DegreeID']) ?>')">Cancel</button>
                     <button type="submit" class="btn btn-sm btn-success">
@@ -1292,7 +1308,82 @@ $YearOptions = [
 </div>
 
 
+<!-- EDIT DEPARTMENT MODAL -->
+<div class="modal fade" id="editDepartmentModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-semibold">
+          <i class="bi bi-pencil-square me-2" style="color:#0369a1"></i>Edit Departments
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
 
+        <input class="form-control mb-3" id="departmentSearch" placeholder="Search departments…">
+
+        <div id="departmentEditList">
+          <?php foreach ($departments as $department): ?>
+          <div class="deg-list-item" id="deptItem-<?= htmlspecialchars($department['DepartmentID']) ?>">
+
+            <!-- Row header -->
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+              <div style="flex:1;min-width:0">
+                <div class="fw-semibold" style="font-size:.95rem"><?= htmlspecialchars($department['DepartmentName']) ?></div>
+                <div class="text-muted" style="font-size:.78rem">
+                  <i class="bi bi-building" style="font-size:.7rem"></i>
+                  ID: <?= htmlspecialchars($department['DepartmentID']) ?>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="deptToggleEdit('<?= htmlspecialchars($department['DepartmentID']) ?>')">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </button>
+                <form action="../backend/modules/dispatcher.php" method="POST" class="mb-0"
+                      onsubmit="return confirm('Delete this department? This cannot be undone.')">
+                  <input type="hidden" name="action" value="/department/delete">
+                  <input type="hidden" name="department_id" value="<?= htmlspecialchars($department['DepartmentID']) ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+            <!-- Inline edit form -->
+            <div class="deg-inline-form" id="deptForm-<?= htmlspecialchars($department['DepartmentID']) ?>">
+              <form action="../backend/modules/dispatcher.php" method="POST">
+                <input type="hidden" name="action" value="/department/edit">
+                <input type="hidden" name="department_id" value="<?= htmlspecialchars($department['DepartmentID']) ?>">
+                <div class="row g-2">
+                  <div class="col-12">
+                    <label class="form-label mb-1" style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280">Department Name *</label>
+                    <input type="text" name="department_name" class="form-control form-control-sm"
+                          value="<?= htmlspecialchars($department['DepartmentName']) ?>" required>
+                  </div>
+                  <div class="col-12 d-flex gap-2 justify-content-end mt-1">
+                    <button type="button" class="btn btn-sm btn-light" onclick="deptToggleEdit('<?= htmlspecialchars($department['DepartmentID']) ?>')">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-success">
+                      <i class="bi bi-check2-circle me-1"></i>Save Changes
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+          </div>
+          <?php endforeach; ?>
+          <?php if (empty($departments)): ?>
+            <p class="text-muted text-center py-4">No departments found in the database.</p>
+          <?php endif; ?>
+        </div>
+
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -1515,6 +1606,33 @@ if (degreeSearchInput) {
   degreeSearchInput.addEventListener('input', function () {
     const q = this.value.toLowerCase();
     document.querySelectorAll('.deg-list-item').forEach(item => {
+      item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+// department edit toggle
+function deptToggleEdit(id) {
+  const item = document.getElementById('deptItem-' + id);
+  const form = document.getElementById('deptForm-' + id);
+  const isOpen = item.classList.contains('editing');
+  document.querySelectorAll('.deg-list-item.editing').forEach(el => {
+    el.classList.remove('editing');
+    el.querySelector('.deg-inline-form').style.display = 'none';
+  });
+  if (!isOpen) {
+    item.classList.add('editing');
+    form.style.display = 'flex';
+    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// department search
+const departmentSearchInput = document.getElementById('departmentSearch');
+if (departmentSearchInput) {
+  departmentSearchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#departmentEditList .deg-list-item').forEach(item => {
       item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
   });

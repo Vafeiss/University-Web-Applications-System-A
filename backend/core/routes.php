@@ -19,3 +19,5 @@ $router->post('/department/add', ['AdminController','addDepartmentController']);
 $router->post('/degree/add', ['AdminController','addDegreeController']);
 $router->post('/degree/delete', ['AdminController','deleteDegreeController']);
 $router->post('/degree/edit', ['AdminController','editDegreeController']);
+$router->post('/department/delete', ['AdminController','deleteDepartmentController']);
+$router->post('/department/edit', ['AdminController','editDepartmentController']);
