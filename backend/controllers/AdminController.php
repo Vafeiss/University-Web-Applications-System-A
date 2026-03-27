@@ -267,8 +267,9 @@ class AdminController {
         }
 
         $email      = trim($_POST['email'] ?? '');
+        $externalId = (int)($_POST['external_id'] ?? 0);
 
-        $added = $this->admin->addSuperUser($email);
+        $added = $this->admin->addSuperUser($email, $externalId);
         if (!$added) {
            Notifications::error("Failed to add Super user.");
            header("Location: ../../frontend/admin_dashboard.php?tab=superusers");
@@ -443,7 +444,7 @@ class AdminController {
         $degreeName = trim((string)($_POST['degree_name'] ?? ''));
         $departmentid = (int)($_POST['department_id'] ?? 0);
 
-        if ($degreeId <= 0 || $departmentid <= 0 || $degreeName === '') {
+        if ($degreeId < 0 || $departmentid < 0 || $degreeName === '') {
             Notifications::error("Invalid degree data.");
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
             exit();
@@ -476,7 +477,7 @@ class AdminController {
         $degreeName = trim((string)($_POST['degree_name'] ?? ''));
         $departmentId = (int)($_POST['department_id'] ?? 0);
 
-        if ($degreeName === '' || $departmentId <= 0) {
+        if ($degreeName === '' || $departmentId < 0) {
             Notifications::error("Degree name and department are required.");
             header("Location: ../../frontend/admin_dashboard.php?tab=degrees");
             exit();

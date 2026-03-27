@@ -43,6 +43,25 @@ require_once '../backend/modules/NotificationsClass.php';
 require_once '../backend/modules/SelectionClass.php';
 require_once '../backend/modules/PromotionClass.php';
 
+function resultFetchAssoc($result): ?array
+{
+  if ($result instanceof PDOStatement) {
+    $row = $result->fetch(PDO::FETCH_ASSOC);
+    return $row === false ? null : $row;
+  }
+
+  return null;
+}
+
+function resultFetchAllAssoc($result): array
+{
+  if ($result instanceof PDOStatement) {
+    return $result->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  return [];
+}
+
 $user = new Admin();
 $user->Check_Session('Admin');
 
@@ -110,14 +129,14 @@ $superusers = $user->getSuperUsers();
 //get arrays for assignment tab
 $assignAdvisorsResult = $user->getAdvisors();
 $assignStudentsResult = $user->getStudents();
-$assignAdvisors  = $assignAdvisorsResult ? $assignAdvisorsResult->fetch_all(MYSQLI_ASSOC) : [];
-$assignStudents  = $assignStudentsResult ? $assignStudentsResult->fetch_all(MYSQLI_ASSOC) : [];
+$assignAdvisors  = resultFetchAllAssoc($assignAdvisorsResult);
+$assignStudents  = resultFetchAllAssoc($assignStudentsResult);
 
 //get statistics
 $allAdvisors = $assignAdvisors;
 $allStudents = $assignStudents;
 $superusersArr = $user->getSuperUsers();
-$allSuperusers = $superusersArr ? $superusersArr->fetch_all(MYSQLI_ASSOC) : [];
+$allSuperusers = resultFetchAllAssoc($superusersArr);
 
 $participants = new Participants_Processing();
 $assignmentMap = $participants->Get_Student_Advisor();
@@ -360,7 +379,7 @@ $YearOptions = [
               </tr>
             </thead>
             <tbody>
-              <?php while ($advisor = $advisors->fetch_assoc()): ?>
+              <?php while (($advisor = resultFetchAssoc($advisors)) !== null): ?>
               <tr class="advisor-row">
                 <td>
                   <input class="form-check-input mt-0"
@@ -492,7 +511,7 @@ $YearOptions = [
               </tr>
             </thead>
             <tbody>
-              <?php while ($student = $students->fetch_assoc()): ?>
+              <?php while (($student = resultFetchAssoc($students)) !== null): ?>
               <tr class="student-row">
                 <td>
                   <input class="form-check-input mt-0"
@@ -558,7 +577,7 @@ $YearOptions = [
         <input type="hidden" name="action" value="/superuser/delete">
 
         <div id="superuserList">
-          <?php while ($superuser = $superusers->fetch_assoc()):
+          <?php while (($superuser = resultFetchAssoc($superusers)) !== null):
             $initials = strtoupper(substr($superuser['Email'], 0, 1));
           ?>
           <div class="list-item superuser-row">
@@ -1135,6 +1154,10 @@ $YearOptions = [
             <div class="col-12">
               <label class="form-label">Email <span class="text-danger">*</span></label>
               <input type="email" name="email" class="form-control" placeholder="admin@university.edu" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">SuperUser ID <span class="text-danger">*</span></label>
+              <input type="number" name="external_id" class="form-control" placeholder="12345" required>
             </div>
           </div>
         </div>
