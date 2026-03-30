@@ -28,7 +28,7 @@ Paraskevas Vafeiadis
         <div class="card shadow p-4" style="width:400px;">
         <h3 class="text-center mb-4">Welcome to AdviCUT!</h3>
         <img src="imgs/cut_tepak_image.png" class="card-img-top mb-4" alt="AdviCut Logo">
-        <form method = "POST" action = "../backend/modules/dispatcher.php">
+        <form method="POST" action="../backend/modules/dispatcher.php">
             <input type="hidden" name="action" value="login">
             <div class="mb-3">
                 <label for="Email" class="form-label">University Email</label>
@@ -38,7 +38,7 @@ Paraskevas Vafeiadis
                 <label for="password" class="form-label">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
-            <button type="Submit" class="btn btn-primary w-100">Log-in</button>
+            <button type="submit" class="btn btn-primary w-100">Log-in</button>
         </form>
         </div>
         </div>

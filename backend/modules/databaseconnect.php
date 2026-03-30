@@ -12,24 +12,24 @@ Files in use: UsersClass.php where the connection is used to query the database 
 declare(strict_types=1);
 
 function ConnectToDatabase(): PDO {
-static $conn = null;
+    static $conn = null;
 
-if($conn === null) {
-$host = "127.0.0.1";
-$db   = "advicut";
-$user = "root";
-$pass = "";
-$charset = "utf8mb4";
+    if ($conn === null) {
+        $host = "127.0.0.1";
+        $db   = "advicut";
+        $user = "root";
+        $pass = "";
+        $charset = "utf8mb4";
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+        $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 
-$options = [
-PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, //exception handling throws exceptions when errors occurs
-PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, //fetches data as the name not numbers 0,1 etc.
-];
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ];
 
-$conn = new PDO($dsn, $user, $pass, $options);
+        $conn = new PDO($dsn, $user, $pass, $options);
+    }
+
+    return $conn;
 }
-return $conn;
-}
-?>

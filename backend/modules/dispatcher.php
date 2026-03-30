@@ -12,7 +12,8 @@ Files in use: AdminController.php and UsersController.php through the router.
 require_once __DIR__ . '/../core/router.php';
 require_once __DIR__ . '/../controllers/AdminController.php';
 require_once __DIR__ . '/../controllers/UsersController.php';
-
+require_once __DIR__ . '/../controllers/AppointmentController.php';
+require_once __DIR__ . '/../controllers/AppointmentControllerAction.php';
 
 $router = new Router();
 

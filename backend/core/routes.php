@@ -21,3 +21,31 @@ $router->post('/degree/delete', ['AdminController','deleteDegreeController']);
 $router->post('/degree/edit', ['AdminController','editDegreeController']);
 $router->post('/department/delete', ['AdminController','deleteDepartmentController']);
 $router->post('/department/edit', ['AdminController','editDepartmentController']);
+
+/*
+|--------------------------------------------------------------------------
+| Appointments Routes
+|--------------------------------------------------------------------------
+*/
+$router->get('/student/book-appointment', ['AppointmentController','studentBookAppointment']);
+$router->post('/student/book-appointment', ['AppointmentController','studentBookAppointment']);
+
+$router->get('/advisor/appointment-requests', ['AppointmentController','advisorAppointmentRequests']);
+$router->post('/advisor/appointment-requests', ['AppointmentController','advisorAppointmentRequests']);
+
+$router->get('/student/appointment-history', ['AppointmentController','studentAppointmentHistory']);
+$router->post('/student/appointment-history', ['AppointmentController','studentAppointmentHistory']);
+
+$router->get('/advisor/appointment-history', ['AppointmentController','advisorAppointmentHistory']);
+$router->post('/advisor/appointment-history', ['AppointmentController','advisorAppointmentHistory']);
+
+$router->get('/student/calendar', ['AppointmentController','studentCalendar']);
+$router->post('/student/calendar', ['AppointmentController','studentCalendar']);
+
+$router->get('/advisor/calendar', ['AppointmentController','advisorCalendar']);
+$router->post('/advisor/calendar', ['AppointmentController','advisorCalendar']);
+
+$router->get('/advisor/office-hours', ['AppointmentController','advisorOfficeHours']);
+$router->post('/advisor/office-hours', ['AppointmentController','advisorOfficeHours']);
+
+$router->post('/appointment/action', ['AppointmentControllerAction','handle']);
